@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GamingX — Play Free Games</title>
+<link rel="stylesheet" href="assets/css/platform.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎮</text></svg>">
+</head>
+<body>
+<header class="gx-header">
+  <div class="gx-logo">GAMING<span>X</span></div>
+  <nav class="gx-nav">
+    <a href="#games">Games</a>
+    <a href="#stats">My Stats</a>
+    <a href="#about">About</a>
+  </nav>
+</header>
+
+<section class="gx-hero">
+  <div class="gx-hero-inner">
+    <h1>Your Arena.<br>Your <span class="accent">Games.</span></h1>
+    <p>GamingX is a free browser gaming platform. No downloads, no sign-ups — just hit play.</p>
+    <a class="gx-btn gx-btn-primary" href="games/soccer/index.html">⚽ Play Soccer Pro '26</a>
+  </div>
+  <div class="gx-hero-glow"></div>
+</section>
+
+<main>
+  <section id="games" class="gx-section">
+    <h2 class="gx-section-title">Game Library</h2>
+    <div class="gx-grid">
+
+      <a class="gx-card gx-card-live" href="games/soccer/index.html">
+        <div class="gx-card-art art-soccer">
+          <div class="pitch-lines"></div>
+          <span class="art-emoji">⚽</span>
+        </div>
+        <div class="gx-card-body">
+          <div class="gx-card-top">
+            <h3>Soccer Pro '26</h3>
+            <span class="gx-badge gx-badge-live">PLAYABLE</span>
+          </div>
+          <p>Full 11v11 arcade football. Pick your club, outplay the AI, and lift the win. Two halves, real set pieces, keepers, tackles and screamers from distance.</p>
+          <div class="gx-tags"><span>Sports</span><span>11v11</span><span>Keyboard + Touch</span></div>
+          <div class="gx-play">▶ PLAY NOW</div>
+        </div>
+      </a>
+
+      <div class="gx-card gx-card-soon">
+        <div class="gx-card-art art-racing"><span class="art-emoji">🏎️</span></div>
+        <div class="gx-card-body">
+          <div class="gx-card-top">
+            <h3>Nitro Rush</h3>
+            <span class="gx-badge">COMING SOON</span>
+          </div>
+          <p>Top-down street racing with drift physics and rival AI drivers.</p>
+          <div class="gx-tags"><span>Racing</span><span>Arcade</span></div>
+        </div>
+      </div>
+
+      <div class="gx-card gx-card-soon">
+        <div class="gx-card-art art-space"><span class="art-emoji">🚀</span></div>
+        <div class="gx-card-body">
+          <div class="gx-card-top">
+            <h3>Void Strikers</h3>
+            <span class="gx-badge">COMING SOON</span>
+          </div>
+          <p>Wave-based space shooter with upgrades and boss fights.</p>
+          <div class="gx-tags"><span>Shooter</span><span>Arcade</span></div>
+        </div>
+      </div>
+
+      <div class="gx-card gx-card-soon">
+        <div class="gx-card-art art-puzzle"><span class="art-emoji">🧩</span></div>
+        <div class="gx-card-body">
+          <div class="gx-card-top">
+            <h3>Hex Mind</h3>
+            <span class="gx-badge">COMING SOON</span>
+          </div>
+          <p>Chill hexagonal puzzle grid with daily challenges.</p>
+          <div class="gx-tags"><span>Puzzle</span><span>Casual</span></div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <section id="stats" class="gx-section">
+    <h2 class="gx-section-title">My Soccer Stats</h2>
+    <div class="gx-stats" id="gx-stats-row">
+      <div class="gx-stat"><div class="gx-stat-num" id="st-played">0</div><div class="gx-stat-label">Matches</div></div>
+      <div class="gx-stat"><div class="gx-stat-num" id="st-wins">0</div><div class="gx-stat-label">Wins</div></div>
+      <div class="gx-stat"><div class="gx-stat-num" id="st-draws">0</div><div class="gx-stat-label">Draws</div></div>
+      <div class="gx-stat"><div class="gx-stat-num" id="st-losses">0</div><div class="gx-stat-label">Losses</div></div>
+      <div class="gx-stat"><div class="gx-stat-num" id="st-goals">0</div><div class="gx-stat-label">Goals Scored</div></div>
+      <div class="gx-stat"><div class="gx-stat-num" id="st-best">—</div><div class="gx-stat-label">Biggest Win</div></div>
+    </div>
+    <p class="gx-stats-note">Stats are stored locally in your browser and update after every full match.</p>
+  </section>
+
+  <section id="about" class="gx-section">
+    <h2 class="gx-section-title">About GamingX</h2>
+    <p class="gx-about">GamingX is built with pure HTML5 canvas and JavaScript — every game runs instantly in your browser on desktop and mobile. Soccer Pro '26 is our flagship title: a complete arcade football experience with team selection, difficulty levels, AI-controlled squads, goalkeepers, set pieces and full match flow from kickoff to the final whistle.</p>
+  </section>
+</main>
+
+<footer class="gx-footer">
+  <div class="gx-logo small">GAMING<span>X</span></div>
+  <p>© 2026 GamingX. Play fair, play free.</p>
+</footer>
+
+<script>
+(function(){
+  try{
+    var s = JSON.parse(localStorage.getItem('gamingx.soccer.stats') || '{}');
+    var set = function(id, v){ document.getElementById(id).textContent = v; };
+    set('st-played', s.played || 0);
+    set('st-wins', s.wins || 0);
+    set('st-draws', s.draws || 0);
+    set('st-losses', s.losses || 0);
+    set('st-goals', s.goalsFor || 0);
+    set('st-best', s.bestWin || '—');
+  }catch(e){}
+})();
+</script>
+</body>
+</html>

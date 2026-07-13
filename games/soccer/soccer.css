@@ -1,0 +1,160 @@
+/* ============ Soccer Pro '26 styles ============ */
+:root{
+  --bg:#0b0e17;
+  --panel:#161b2e;
+  --panel2:#1d2440;
+  --text:#e8ecf8;
+  --muted:#8b93ad;
+  --accent:#22d3ee;
+  --accent2:#a855f7;
+  --green:#22c55e;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%}
+body{
+  background:var(--bg);color:var(--text);
+  font-family:'Segoe UI',system-ui,-apple-system,Roboto,Helvetica,Arial,sans-serif;
+  overflow:hidden;
+}
+button{font-family:inherit;color:inherit;background:none;border:none;cursor:pointer}
+
+/* ---------- screens ---------- */
+.screen{
+  position:fixed;inset:0;display:none;align-items:center;justify-content:center;
+  background:
+    radial-gradient(1000px 600px at 80% -10%,rgba(34,211,238,.10),transparent 60%),
+    radial-gradient(900px 600px at 10% 110%,rgba(168,85,247,.10),transparent 60%),
+    var(--bg);
+  overflow:auto;
+}
+.screen.active{display:flex}
+
+.menu-box{
+  width:min(560px,92vw);padding:44px 40px;text-align:center;
+  background:rgba(22,27,46,.85);border:1px solid rgba(255,255,255,.08);
+  border-radius:22px;box-shadow:0 30px 80px rgba(0,0,0,.6);
+  margin:24px 0;
+}
+.menu-box.wide{width:min(880px,94vw)}
+
+.back-link{
+  display:inline-block;margin-bottom:20px;color:var(--muted);text-decoration:none;
+  font-weight:700;font-size:.85rem;letter-spacing:1px;
+}
+.back-link:hover{color:var(--accent)}
+
+.game-logo{
+  font-size:clamp(2.2rem,7vw,3.4rem);font-weight:900;letter-spacing:2px;line-height:1;
+}
+.game-logo span{
+  background:linear-gradient(90deg,var(--accent),var(--accent2));
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+}
+.game-logo em{font-style:normal;color:var(--green);font-size:.55em;vertical-align:super}
+.tagline{color:var(--muted);margin:14px 0 30px}
+
+.menu-buttons{display:flex;flex-direction:column;gap:12px;align-items:center;margin-top:26px}
+.btn{
+  width:min(320px,100%);padding:14px 20px;border-radius:12px;font-weight:800;font-size:1rem;
+  letter-spacing:1px;background:var(--panel2);border:1px solid rgba(255,255,255,.1);
+  transition:transform .12s,box-shadow .12s,border-color .12s;
+}
+.btn:hover{transform:translateY(-2px);border-color:rgba(34,211,238,.5)}
+.btn-primary{
+  background:linear-gradient(90deg,var(--accent),var(--accent2));color:#08101c;border:none;
+  box-shadow:0 8px 26px rgba(34,211,238,.35);
+}
+.menu-foot{margin-top:24px;color:var(--muted);font-size:.8rem}
+.screen-title{font-size:1.5rem;font-weight:900;letter-spacing:2px;margin-bottom:26px}
+
+/* ---------- how to ---------- */
+.howto-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:22px;text-align:left}
+.howto-col h3{margin-bottom:10px;font-size:1rem;letter-spacing:1px}
+.howto-col ul{list-style:none}
+.howto-col li{color:var(--muted);font-size:.9rem;padding:5px 0;border-bottom:1px dashed rgba(255,255,255,.07)}
+.howto-col li b{color:var(--text)}
+
+/* ---------- team select ---------- */
+.select-row{display:flex;align-items:center;justify-content:center;gap:18px;flex-wrap:wrap}
+.team-pick{flex:1;min-width:240px}
+.pick-label{font-size:.72rem;font-weight:800;letter-spacing:2px;color:var(--muted);margin-bottom:10px}
+.vs{font-weight:900;font-size:1.4rem;color:var(--accent);padding-top:18px}
+.team-card{
+  display:flex;align-items:center;justify-content:space-between;gap:8px;
+  background:var(--panel2);border:1px solid rgba(255,255,255,.1);border-radius:16px;padding:16px 10px;
+}
+.arrow{
+  font-size:1.8rem;font-weight:900;color:var(--muted);padding:4px 12px;border-radius:10px;
+}
+.arrow:hover{color:var(--accent);background:rgba(34,211,238,.08)}
+.team-info{flex:1}
+.team-crest{
+  width:58px;height:58px;border-radius:50%;margin:0 auto 8px;
+  border:3px solid rgba(255,255,255,.25);box-shadow:inset 0 0 0 4px rgba(0,0,0,.25);
+}
+.team-name{font-weight:800;font-size:1.02rem}
+.team-rating{color:var(--muted);font-size:.8rem;font-weight:700;margin-top:2px}
+.team-rating b{color:var(--green)}
+
+.options-row{display:flex;gap:26px;justify-content:center;flex-wrap:wrap;margin-top:28px}
+.seg{display:inline-flex;background:var(--panel2);border-radius:12px;padding:4px;border:1px solid rgba(255,255,255,.1)}
+.seg button{
+  padding:9px 16px;border-radius:9px;font-weight:800;font-size:.78rem;letter-spacing:1px;color:var(--muted);
+}
+.seg button.on{
+  background:linear-gradient(90deg,var(--accent),var(--accent2));color:#08101c;
+}
+
+/* ---------- match ---------- */
+#screen-match{background:#0a3d1f;display:none}
+#screen-match.active{display:block}
+#game{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none}
+
+/* touch UI */
+#touch-ui{position:absolute;inset:0;pointer-events:none;display:none;z-index:20}
+body.touch #touch-ui{display:block}
+#stick-zone{
+  position:absolute;left:0;bottom:0;width:45%;height:55%;pointer-events:auto;
+}
+#stick-base{
+  position:absolute;width:120px;height:120px;border-radius:50%;
+  background:rgba(255,255,255,.08);border:2px solid rgba(255,255,255,.25);
+  left:40px;bottom:40px;display:none;
+}
+#stick-knob{
+  position:absolute;width:54px;height:54px;border-radius:50%;left:33px;top:33px;
+  background:rgba(255,255,255,.35);
+}
+#touch-buttons{
+  position:absolute;right:18px;bottom:26px;display:grid;grid-template-columns:auto auto;gap:14px;
+  pointer-events:auto;
+}
+.tbtn{
+  width:64px;height:64px;border-radius:50%;font-weight:900;font-size:.72rem;letter-spacing:1px;
+  background:rgba(255,255,255,.12);border:2px solid rgba(255,255,255,.3);color:#fff;
+  user-select:none;
+}
+.tbtn-big{width:76px;height:76px;font-size:.8rem}
+.tbtn:active,.tbtn.held{background:rgba(34,211,238,.45);border-color:var(--accent)}
+
+/* overlays */
+.match-overlay{
+  position:absolute;inset:0;z-index:30;display:flex;align-items:center;justify-content:center;
+  background:rgba(5,8,15,.72);backdrop-filter:blur(6px);
+}
+.match-overlay.hidden{display:none}
+.overlay-box{
+  text-align:center;background:rgba(22,27,46,.95);border:1px solid rgba(255,255,255,.1);
+  border-radius:20px;padding:40px 48px;box-shadow:0 30px 80px rgba(0,0,0,.7);
+  display:flex;flex-direction:column;gap:12px;align-items:center;
+  width:min(440px,92vw);
+}
+.overlay-box h2{font-size:1.6rem;font-weight:900;letter-spacing:3px;margin-bottom:8px}
+.break-score{font-size:2.2rem;font-weight:900;letter-spacing:1px}
+.break-sub{color:var(--muted);font-size:.95rem;margin-bottom:8px}
+#break-buttons{display:flex;flex-direction:column;gap:12px;width:100%;align-items:center}
+
+@media (max-width:640px){
+  .menu-box{padding:30px 20px}
+  .overlay-box{padding:28px 22px}
+}

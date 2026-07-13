@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Soccer Pro '26 — GamingX</title>
+<link rel="stylesheet" href="soccer.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚽</text></svg>">
+</head>
+<body>
+
+<!-- ===================== MAIN MENU ===================== -->
+<div id="screen-menu" class="screen active">
+  <div class="menu-box">
+    <a class="back-link" href="../../index.html">← GamingX Hub</a>
+    <h1 class="game-logo">SOCCER<span>PRO</span><em>'26</em></h1>
+    <p class="tagline">Full 11v11 arcade football. Kick off in seconds.</p>
+    <div class="menu-buttons">
+      <button class="btn btn-primary" id="btn-play">▶ &nbsp;PLAY MATCH</button>
+      <button class="btn" id="btn-howto">🎮 &nbsp;HOW TO PLAY</button>
+    </div>
+    <div class="menu-foot">Keyboard + touch supported · Best on desktop</div>
+  </div>
+</div>
+
+<!-- ===================== HOW TO PLAY ===================== -->
+<div id="screen-howto" class="screen">
+  <div class="menu-box wide">
+    <h2 class="screen-title">HOW TO PLAY</h2>
+    <div class="howto-grid">
+      <div class="howto-col">
+        <h3>⌨️ Keyboard</h3>
+        <ul>
+          <li><b>Move</b> — WASD or Arrow keys</li>
+          <li><b>Sprint</b> — hold Shift</li>
+          <li><b>Pass / Tackle</b> — X or K</li>
+          <li><b>Shoot / Slide</b> — C or L (hold to power up)</li>
+          <li><b>Switch player</b> — Z or J</li>
+          <li><b>Pause</b> — P or Esc</li>
+        </ul>
+      </div>
+      <div class="howto-col">
+        <h3>📱 Touch</h3>
+        <ul>
+          <li><b>Move</b> — virtual stick, left side of screen</li>
+          <li><b>PASS / SHOOT / SPRINT / SWITCH</b> — buttons, right side</li>
+          <li>Hold <b>SHOOT</b> to charge power</li>
+        </ul>
+      </div>
+      <div class="howto-col">
+        <h3>⚽ The Game</h3>
+        <ul>
+          <li>11v11, two halves, running match clock.</li>
+          <li>You control the highlighted player — the rest of your squad is run by AI.</li>
+          <li>Off the pitch means throw-ins, corners and goal kicks.</li>
+          <li>Keepers catch, punt and dive. Beat them with placed or powered shots.</li>
+          <li>Arcade rules: fast, physical, no fouls, no offside. Just score.</li>
+        </ul>
+      </div>
+    </div>
+    <div class="menu-buttons"><button class="btn" id="btn-howto-back">← BACK</button></div>
+  </div>
+</div>
+
+<!-- ===================== TEAM SELECT ===================== -->
+<div id="screen-select" class="screen">
+  <div class="menu-box wide">
+    <h2 class="screen-title">MATCH SETUP</h2>
+
+    <div class="select-row">
+      <div class="team-pick">
+        <div class="pick-label">YOUR TEAM</div>
+        <div class="team-card" id="home-card">
+          <button class="arrow" id="home-prev">‹</button>
+          <div class="team-info">
+            <div class="team-crest" id="home-crest"></div>
+            <div class="team-name" id="home-name"></div>
+            <div class="team-rating" id="home-rating"></div>
+          </div>
+          <button class="arrow" id="home-next">›</button>
+        </div>
+      </div>
+      <div class="vs">VS</div>
+      <div class="team-pick">
+        <div class="pick-label">OPPONENT (CPU)</div>
+        <div class="team-card" id="away-card">
+          <button class="arrow" id="away-prev">‹</button>
+          <div class="team-info">
+            <div class="team-crest" id="away-crest"></div>
+            <div class="team-name" id="away-name"></div>
+            <div class="team-rating" id="away-rating"></div>
+          </div>
+          <button class="arrow" id="away-next">›</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="options-row">
+      <div class="opt">
+        <div class="pick-label">DIFFICULTY</div>
+        <div class="seg" id="seg-difficulty">
+          <button data-v="easy">AMATEUR</button>
+          <button data-v="normal" class="on">PRO</button>
+          <button data-v="hard">LEGEND</button>
+        </div>
+      </div>
+      <div class="opt">
+        <div class="pick-label">MATCH LENGTH</div>
+        <div class="seg" id="seg-length">
+          <button data-v="120">4 MIN</button>
+          <button data-v="180" class="on">6 MIN</button>
+          <button data-v="240">8 MIN</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="menu-buttons">
+      <button class="btn btn-primary" id="btn-kickoff">⚽ &nbsp;KICK OFF</button>
+      <button class="btn" id="btn-select-back">← BACK</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== MATCH ===================== -->
+<div id="screen-match" class="screen">
+  <canvas id="game"></canvas>
+
+  <!-- touch controls -->
+  <div id="touch-ui">
+    <div id="stick-zone"><div id="stick-base"><div id="stick-knob"></div></div></div>
+    <div id="touch-buttons">
+      <button class="tbtn" id="tb-switch">SW</button>
+      <button class="tbtn" id="tb-sprint">SPR</button>
+      <button class="tbtn tbtn-big" id="tb-pass">PASS</button>
+      <button class="tbtn tbtn-big" id="tb-shoot">SHOT</button>
+    </div>
+  </div>
+
+  <!-- pause overlay -->
+  <div id="overlay-pause" class="match-overlay hidden">
+    <div class="overlay-box">
+      <h2>PAUSED</h2>
+      <button class="btn btn-primary" id="btn-resume">RESUME</button>
+      <button class="btn" id="btn-restart">RESTART MATCH</button>
+      <button class="btn" id="btn-quit">QUIT TO MENU</button>
+    </div>
+  </div>
+
+  <!-- half time / full time overlay -->
+  <div id="overlay-break" class="match-overlay hidden">
+    <div class="overlay-box">
+      <h2 id="break-title">HALF TIME</h2>
+      <div id="break-score" class="break-score"></div>
+      <div id="break-sub" class="break-sub"></div>
+      <div id="break-buttons"></div>
+    </div>
+  </div>
+</div>
+
+<script src="soccer.js"></script>
+</body>
+</html>
