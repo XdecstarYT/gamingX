@@ -92,6 +92,16 @@ a{color:inherit;text-decoration:none}
 .art-racing{background:linear-gradient(135deg,#3b0764,#6d28d9)}
 .art-space{background:linear-gradient(135deg,#0c1a3a,#1e3a8a)}
 .art-puzzle{background:linear-gradient(135deg,#7c2d12,#b45309)}
+.art-stack{background:linear-gradient(135deg,#155e63,#0e7490)}
+.art-runner{background:linear-gradient(135deg,#2e1065,#7c3aed)}
+.art-breaker{background:linear-gradient(135deg,#7f1d1d,#b91c1c)}
+.art-penalty{background:linear-gradient(135deg,#052e16,#15803d)}
+.art-snake{background:linear-gradient(135deg,#14532d,#16a34a)}
+.art-maze{background:linear-gradient(135deg,#1e1b4b,#4338ca)}
+.art-hoop{background:linear-gradient(135deg,#7c2d12,#ea580c)}
+.art-whack{background:linear-gradient(135deg,#3f1d38,#9d174d)}
+.gx-badge-3d{background:rgba(168,85,247,.18);color:#c084fc}
+.gx-hi{color:#fde047!important;border-color:rgba(253,224,71,.3)!important;background:rgba(253,224,71,.07)!important}
 .pitch-lines{
   position:absolute;inset:12px;border:2px solid rgba(255,255,255,.35);border-radius:4px;
 }

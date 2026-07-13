@@ -1,6 +1,6 @@
 # 🎮 GamingX
 
-A free browser gaming platform built with pure HTML5 canvas and JavaScript — no frameworks, no build step, no downloads. Open `index.html` and play.
+A free browser gaming platform with **11 complete games** — one 2D canvas flagship and ten 3D titles built on **three.js**. No build step, no downloads, no sign-ups. Open `index.html` and play.
 
 ## ⚽ Soccer Pro '26 (flagship title)
 
@@ -43,6 +43,25 @@ A complete FIFA-style arcade football game, 11v11, fully playable on desktop and
 - World units: 1 m = 10 u, pitch 1050×680. All physics is delta-time based.
 - Append `?half=SECONDS` to the soccer URL to override half length (useful for quick testing, e.g. `?half=20`).
 
+## 🕹️ The 3D arcade (three.js)
+
+All ten 3D games share the GamingX UI kit (`assets/css/game-ui.css` + `assets/js/gx.js`: overlays, HUD chips, WebAudio synth, localStorage high scores) and a vendored `three.min.js` (r128) — so everything works offline from `file://`.
+
+| Game | Folder | Genre | The pitch |
+|---|---|---|---|
+| 🏎️ **Nitro Rush** | `games/nitro` | Endless racer | 4-lane highway, traffic AI, nitro meter, chase cam, distance score |
+| 🚀 **Void Strikers** | `games/void` | Wave shooter | Drones/weavers/homing hunters, twin lasers, waves, lives, starfield |
+| 🏗️ **Sky Stack** | `games/stack` | One-tap arcade | Sliding blocks, overhang trimming, falling debris, perfect-combo scoring |
+| 🔮 **Orb Runner** | `games/runner` | Lane runner | Jump bars, wall gaps, coin arcs, speed ramp, rolling physics |
+| 🧱 **Cube Breaker** | `games/breaker` | Breakout | Angled paddle rebounds, 2-hit armored bricks, endless levels |
+| 🥅 **Penalty Kings** | `games/penalty` | Sports | Best-of-5 shootout: aim reticle, power bar, diving keeper, sudden death |
+| 🐍 **Snake 3D** | `games/snake` | Classic | Neon grid, tick-based movement, swipe support, speed-up per meal |
+| 🌀 **Maze Escape** | `games/maze` | First-person | Procedural mazes (recursive backtracker), pointer-lock look, timer runs |
+| 🏀 **Hoop Shot** | `games/hoop` | Sports | Projectile + rim/backboard physics, 2pt/3pt spots, swish bonus, 60s |
+| 🤖 **Whack-a-Bot** | `games/whack` | Reaction | Raycast clicking, combo multiplier, red bomb bots, 45s shifts |
+
+Every game has: start/how-to overlay, live HUD, sound effects, game-over screen with replay, a persistent local high score (shown on its hub card), and keyboard + mouse/touch controls.
+
 ## Running locally
 
 No server needed — everything works from `file://`. For a nicer setup:
@@ -56,15 +75,12 @@ python3 -m http.server 8000
 ## Project structure
 
 ```
-index.html                  GamingX hub (game library + stats)
+index.html                  GamingX hub (game library, stats, high scores)
 assets/css/platform.css     Hub styling
-games/soccer/index.html     Soccer Pro '26 (menus + match screen)
-games/soccer/soccer.css     Game UI styling
-games/soccer/soccer.js      Complete game engine (~1200 lines)
+assets/css/game-ui.css      Shared 3D-game UI (HUD, overlays, meters)
+assets/js/three.min.js      Vendored three.js r128
+assets/js/gx.js             Shared helpers: overlays, HUD, hi-scores, audio
+games/soccer/               Soccer Pro '26 (2D canvas flagship)
+games/nitro|void|stack|runner|breaker|
+      penalty|snake|maze|hoop|whack/   Ten 3D games (index.html + game.js each)
 ```
-
-## Roadmap
-
-- 🏎️ Nitro Rush — top-down racing
-- 🚀 Void Strikers — wave shooter
-- 🧩 Hex Mind — puzzle grid
