@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Play — GX Forge — GamingX</title>
+<link rel="stylesheet" href="../../assets/css/game-ui.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛠️</text></svg>">
+</head>
+<body>
+<div class="gx-topbar">
+  <a class="gx-back" href="../../index.html">← GAMINGX</a>
+  <div class="gx-hud" id="hud"></div>
+</div>
+<div id="overlay" class="gx-overlay">
+  <div class="gx-panel">
+    <h1 id="ov-title"></h1>
+    <p id="ov-sub"></p>
+    <div id="ov-buttons"></div>
+  </div>
+</div>
+<canvas id="game-canvas" style="position:fixed;inset:0;width:100%;height:100%"></canvas>
+
+<script src="../../assets/js/gx.js"></script>
+<script src="engine.js"></script>
+<script>
+(() => {
+'use strict';
+const canvas = document.getElementById('game-canvas');
+function sizeCanvas() {
+  const dpr = Math.min(devicePixelRatio || 1, 2);
+  canvas.width = innerWidth * dpr;
+  canvas.height = innerHeight * dpr;
+}
+sizeCanvas();
+addEventListener('resize', sizeCanvas);
+
+let project = null, running = null;
+try {
+  const id = new URLSearchParams(location.search).get('id');
+  const list = JSON.parse(localStorage.getItem('gamingx.forge.projects') || '[]');
+  project = list.find(p => p.id === id) || null;
+} catch (e) {}
+
+function menu() {
+  if (!project) {
+    GX.show('GAME NOT FOUND',
+      'This creation doesn\'t exist on this browser. Games made in GX Forge are stored locally — build your own!',
+      [{ label: '🛠️ OPEN GX FORGE', primary: true, cb: () => location.href = 'index.html' },
+       { label: 'GAMINGX HUB', cb: () => location.href = '../../index.html' }]);
+    return;
+  }
+  const modeTxt = project.mode === 'topdown'
+    ? '<b>WASD/Arrows</b> move · touch: drag to move'
+    : '<b>←/→</b> move · <b>Space/↑</b> jump · touch: tap sides / middle';
+  GX.show(esc(project.title || 'Untitled') + ' <span>· FORGE</span>',
+    'A GamingX creation made in GX Forge.<br>' + modeTxt +
+    (project.requireCoins ? '<br><b>Collect every coin</b> to open the goal!' : ''),
+    [{ label: '▶ PLAY', primary: true, cb: start },
+     { label: '🛠️ REMIX IN FORGE', cb: () => location.href = 'index.html?load=' + project.id },
+     { label: 'GAMINGX HUB', cb: () => location.href = '../../index.html' }]);
+}
+function esc(s) { return String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }
+
+function start() {
+  GX.hide();
+  sizeCanvas();
+  running = GXEngine.run(canvas, project, {
+    onEnd(res) {
+      running = null;
+      const hiKey = 'forge.' + project.id;
+      const rec = res.won && GX.setHi(hiKey, res.score);
+      GX.show(res.won ? '🏆 LEVEL CLEAR!' : 'GAME OVER',
+        (res.won
+          ? `Score: <b>${res.score}</b> · Coins ${res.coins}/${res.coinsTotal} · ${res.time}s${rec ? ' — <b>NEW RECORD!</b>' : ''}`
+          : 'Out of lives. Have another go!'),
+        [{ label: '↻ PLAY AGAIN', primary: true, cb: start },
+         { label: '🛠️ REMIX IN FORGE', cb: () => location.href = 'index.html?load=' + project.id },
+         { label: 'GAMINGX HUB', cb: () => location.href = '../../index.html' }]);
+    },
+  });
+}
+menu();
+})();
+</script>
+</body>
+</html>

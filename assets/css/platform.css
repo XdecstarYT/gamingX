@@ -101,6 +101,25 @@ a{color:inherit;text-decoration:none}
 .art-hoop{background:linear-gradient(135deg,#7c2d12,#ea580c)}
 .art-whack{background:linear-gradient(135deg,#3f1d38,#9d174d)}
 .gx-badge-3d{background:rgba(168,85,247,.18);color:#c084fc}
+.gx-badge-forge{background:rgba(253,224,71,.14);color:#fde047}
+.art-forge{background:linear-gradient(135deg,#1c2a4a,#164e63 60%,#0e7490);position:relative}
+.art-forge::before{
+  content:"";position:absolute;inset:14px;border-radius:8px;
+  background-image:linear-gradient(rgba(255,255,255,.09) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(255,255,255,.09) 1px,transparent 1px);
+  background-size:22px 22px;
+}
+.gx-card-forge{border-color:rgba(253,224,71,.25)}
+.gx-card-forge:hover{border-color:rgba(253,224,71,.6);box-shadow:0 16px 40px rgba(0,0,0,.5),0 0 0 1px rgba(253,224,71,.3)}
+.gx-creations-intro{color:var(--muted);font-size:.92rem;margin-bottom:20px}
+.gx-inline-link{color:var(--accent);font-weight:700}
+.gx-creations-empty{
+  text-align:center;padding:44px 20px;border:1px dashed rgba(255,255,255,.15);border-radius:var(--radius);
+  color:var(--muted);
+}
+.gx-creations-empty span{font-size:2.4rem;display:block;margin-bottom:10px}
+.gx-creations-empty p{max-width:420px;margin:0 auto 20px}
+.gx-creations-empty b{color:var(--text)}
 .gx-hi{color:#fde047!important;border-color:rgba(253,224,71,.3)!important;background:rgba(253,224,71,.07)!important}
 .pitch-lines{
   position:absolute;inset:12px;border:2px solid rgba(255,255,255,.35);border-radius:4px;

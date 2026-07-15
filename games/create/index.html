@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GX Forge — Create a Game — GamingX</title>
+<link rel="stylesheet" href="editor.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛠️</text></svg>">
+</head>
+<body>
+
+<header class="fg-topbar">
+  <a class="fg-back" href="../../index.html">← GAMINGX</a>
+  <div class="fg-logo">GX <span>FORGE</span></div>
+  <input id="title-input" class="fg-title" maxlength="28" placeholder="Untitled Game" spellcheck="false">
+  <div class="fg-actions">
+    <button class="fg-btn" id="btn-new">✚ New</button>
+    <button class="fg-btn" id="btn-mygames">📁 My Games</button>
+    <button class="fg-btn" id="btn-share">⇄ Share</button>
+    <button class="fg-btn" id="btn-save">💾 Save</button>
+    <button class="fg-btn fg-btn-accent" id="btn-test">▶ Playtest</button>
+    <button class="fg-btn fg-btn-primary" id="btn-publish">🚀 Publish</button>
+  </div>
+</header>
+
+<main class="fg-main">
+  <aside class="fg-palette" id="palette">
+    <div class="fg-side-label">TOOLS</div>
+    <!-- tool buttons injected by editor.js -->
+  </aside>
+
+  <section class="fg-canvas-wrap" id="canvas-wrap">
+    <canvas id="grid"></canvas>
+  </section>
+
+  <aside class="fg-settings">
+    <div class="fg-side-label">GAME SETTINGS</div>
+    <div class="fg-field">
+      <label>Mode</label>
+      <div class="fg-static" id="mode-label">Platformer</div>
+    </div>
+    <div class="fg-field">
+      <label>Size</label>
+      <div class="fg-static" id="size-label">52 × 14</div>
+    </div>
+    <div class="fg-field">
+      <label>Theme</label>
+      <div class="fg-swatches" id="swatches"></div>
+    </div>
+    <div class="fg-field fg-check">
+      <label><input type="checkbox" id="require-coins"> Collect all coins to finish</label>
+    </div>
+    <div class="fg-field">
+      <button class="fg-btn fg-wide" id="btn-undo">↶ Undo (Ctrl+Z)</button>
+      <button class="fg-btn fg-wide" id="btn-clear">🧹 Clear level</button>
+    </div>
+    <div class="fg-tips">
+      <b>How to build</b>
+      <p>Pick a tool, then click / drag on the grid. Right-click erases.</p>
+      <p>Every game needs a <b>Player start</b> and a <b>Goal flag</b>.</p>
+      <p><b>Playtest</b> any time — <b>Publish</b> puts it on your GamingX hub.</p>
+    </div>
+    <div class="fg-status" id="status"></div>
+  </aside>
+</main>
+
+<!-- generic modal -->
+<div class="fg-modal hidden" id="modal">
+  <div class="fg-modal-box" id="modal-box"></div>
+</div>
+
+<!-- playtest overlay -->
+<div class="fg-play hidden" id="play-overlay">
+  <canvas id="play-canvas"></canvas>
+  <div class="fg-play-bar">
+    <span id="play-label">PLAYTEST</span>
+    <button class="fg-btn" id="btn-stop-test">✕ BACK TO EDITOR (Esc)</button>
+  </div>
+</div>
+
+<script src="engine.js"></script>
+<script src="editor.js"></script>
+</body>
+</html>

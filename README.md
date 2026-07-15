@@ -1,6 +1,6 @@
 # 🎮 GamingX
 
-A free browser gaming platform with **11 complete games** — one 2D canvas flagship and ten 3D titles built on **three.js**. No build step, no downloads, no sign-ups. Open `index.html` and play.
+A free browser gaming platform with **11 complete games** — one 2D canvas flagship and ten 3D titles built on **three.js** — plus **GX Forge**, a full game engine and no-code game maker. No build step, no downloads, no sign-ups. Open `index.html` and play.
 
 ## ⚽ Soccer Pro '26 (flagship title)
 
@@ -62,6 +62,25 @@ All ten 3D games share the GamingX UI kit (`assets/css/game-ui.css` + `assets/js
 
 Every game has: start/how-to overlay, live HUD, sound effects, game-over screen with replay, a persistent local high score (shown on its hub card), and keyboard + mouse/touch controls.
 
+## 🛠️ GX Forge — create your own games
+
+GX Forge (`games/create/`) is a complete game-creation suite built on the **GX Engine**, GamingX's own 2D runtime:
+
+**The engine** (`engine.js`, dependency-free and portable):
+- Tile-based worlds with two physics modes: **platformer** (gravity, variable-height jumps, coyote time, jump buffering, enemy stomping) and **top-down** (free 8-way movement)
+- Entities: patrolling walker bots (edge + wall detection), sine-wave flyer bots
+- Tiles: solid blocks, spikes, coins, goal flags, bounce pads, player spawn
+- Camera follow with level clamping, parallax backdrop, four color themes, canvas HUD, built-in WebAudio SFX, keyboard + touch input, lives/score/timer, win/lose callbacks
+- One call to run a game: `GXEngine.run(canvas, levelData, { onEnd })`
+
+**The editor** (`index.html` + `editor.js`):
+- Paint tiles on the grid (drag to paint, right-click to erase, Ctrl+Z undo)
+- The palette and grid render with the exact same `drawTile` code as the runtime — what you paint is what you play
+- New-game wizard: mode, three level sizes, blank canvas or remixable demo level (*Neon Canyon* / *Vault Dungeon*)
+- Theme swatches, "collect all coins to finish" rule, instant fullscreen **Playtest**, autosaved drafts
+- **My Games** manager (save/load/delete), **Share codes** (export/import games as JSON)
+- **Publish** puts your game on the GamingX hub under **My Creations**, playable via `games/create/play.html?id=…` with per-game high scores
+
 ## Running locally
 
 No server needed — everything works from `file://`. For a nicer setup:
@@ -83,4 +102,7 @@ assets/js/gx.js             Shared helpers: overlays, HUD, hi-scores, audio
 games/soccer/               Soccer Pro '26 (2D canvas flagship)
 games/nitro|void|stack|runner|breaker|
       penalty|snake|maze|hoop|whack/   Ten 3D games (index.html + game.js each)
+games/create/               GX Forge: engine.js (GX Engine runtime),
+                            index.html + editor.js/css (level editor),
+                            play.html (plays published creations)
 ```
