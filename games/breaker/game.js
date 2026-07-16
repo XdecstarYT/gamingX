@@ -31,7 +31,7 @@ backdrop.position.set(0, 8.5, -1.2);
 scene.add(backdrop);
 
 /* paddle & ball */
-const paddle = new THREE.Mesh(new THREE.BoxGeometry(3.6, 0.55, 1.2),
+const paddle = new THREE.Mesh(new THREE.BoxGeometry(4.4, 0.55, 1.2),
   new THREE.MeshStandardMaterial({ color: 0x22d3ee, emissive: 0x0a4c5c, metalness: 0.5, roughness: 0.3 }));
 paddle.position.set(0, PADDLE_Y, 0);
 scene.add(paddle);
@@ -61,7 +61,7 @@ function buildBricks(level) {
 
 /* state */
 let state = 'menu', score = 0, lives = 3, level = 1;
-let bx = 0, by = 0, bvx = 0, bvy = 0, ballSpeed = 15, stuck = true;
+let bx = 0, by = 0, bvx = 0, bvy = 0, ballSpeed = 12.5, stuck = true;
 let paddleX = 0;
 
 function resetBallOnPaddle() {
@@ -78,7 +78,7 @@ function launch() {
 }
 
 function reset() {
-  score = 0; lives = 3; level = 1; ballSpeed = 15;
+  score = 0; lives = 3; level = 1; ballSpeed = 12.5;
   paddleX = 0;
   buildBricks(level);
   resetBallOnPaddle();
@@ -127,7 +127,7 @@ function frame() {
     if (keys.ArrowLeft || keys.KeyA) { paddleX -= 20 * dt; mouseX = null; }
     if (keys.ArrowRight || keys.KeyD) { paddleX += 20 * dt; mouseX = null; }
     if (mouseX !== null) paddleX = THREE.MathUtils.lerp(paddleX, mouseX, 1 - Math.pow(0.0001, dt));
-    paddleX = THREE.MathUtils.clamp(paddleX, -FIELD_X + 1.8, FIELD_X - 1.8);
+    paddleX = THREE.MathUtils.clamp(paddleX, -FIELD_X + 2.2, FIELD_X - 2.2);
     paddle.position.x = paddleX;
 
     if (stuck) {
@@ -141,8 +141,8 @@ function frame() {
       if (by > TOP_Y - 0.42) { by = TOP_Y - 0.42; bvy = -Math.abs(bvy); GX.beep(240, 0.04, 'square', 0.03); }
 
       // paddle
-      if (bvy < 0 && by - 0.42 < PADDLE_Y + 0.3 && by > PADDLE_Y - 0.4 && Math.abs(bx - paddleX) < 2.1) {
-        const off = (bx - paddleX) / 1.8;
+      if (bvy < 0 && by - 0.42 < PADDLE_Y + 0.3 && by > PADDLE_Y - 0.4 && Math.abs(bx - paddleX) < 2.5) {
+        const off = (bx - paddleX) / 2.2;
         const angle = Math.PI / 2 - off * 1.05;
         bvx = Math.cos(angle) * ballSpeed;
         bvy = Math.abs(Math.sin(angle) * ballSpeed);
@@ -177,7 +177,7 @@ function frame() {
 
       if (bricks.length === 0) {
         level++;
-        ballSpeed = Math.min(26, 15 + level * 1.4);
+        ballSpeed = Math.min(21, 12.5 + level * 1.0);
         flash('LEVEL ' + level);
         GX.beep(660, 0.15, 'triangle', 0.08, 300);
         buildBricks(level);

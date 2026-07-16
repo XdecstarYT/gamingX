@@ -71,7 +71,7 @@ function spawnEnemy() {
   scene.add(mesh);
   enemies.push({
     mesh, ...def, hp: def.hp,
-    vz: 22 + wave * 2.5 + Math.random() * 6,
+    vz: 15 + wave * 2 + Math.random() * 5,
     baseX: mesh.position.x, phase: Math.random() * 6.28,
   });
 }
@@ -180,15 +180,15 @@ function frame() {
 
     // enemies
     spawnT -= dt;
-    if (spawnT <= 0) { spawnEnemy(); spawnT = Math.max(0.35, 1.15 - wave * 0.08); }
+    if (spawnT <= 0) { spawnEnemy(); spawnT = Math.max(0.5, 1.5 - wave * 0.08); }
     for (let i = enemies.length - 1; i >= 0; i--) {
       const e = enemies[i];
       const m = e.mesh;
       m.position.z += e.vz * dt;
       if (e.kind === 'weaver') m.position.x = e.baseX + Math.sin(t * 3 + e.phase) * 6;
       if (e.kind === 'hunter') {
-        m.position.x += THREE.MathUtils.clamp(ship.position.x - m.position.x, -1, 1) * 9 * dt;
-        m.position.y += THREE.MathUtils.clamp(ship.position.y - m.position.y, -1, 1) * 9 * dt;
+        m.position.x += THREE.MathUtils.clamp(ship.position.x - m.position.x, -1, 1) * 6 * dt;
+        m.position.y += THREE.MathUtils.clamp(ship.position.y - m.position.y, -1, 1) * 6 * dt;
       }
       m.rotation.x += dt * 2; m.rotation.y += dt * 3;
       if (m.position.z > 28) { scene.remove(m); enemies.splice(i, 1); continue; }
@@ -208,14 +208,14 @@ function frame() {
         scene.remove(m); enemies.splice(i, 1);
         score += e.pts * wave; kills++;
         GX.beep(160, 0.12, 'sawtooth', 0.07, -80);
-        if (kills >= wave * 8) { wave++; flash('WAVE ' + wave); GX.beep(520, 0.2, 'triangle', 0.08, 200); }
+        if (kills >= wave * 10) { wave++; flash('WAVE ' + wave); GX.beep(520, 0.2, 'triangle', 0.08, 200); }
         continue;
       }
       // ship collision
-      if (invuln <= 0 && m.position.distanceTo(ship.position) < 2.1) {
+      if (invuln <= 0 && m.position.distanceTo(ship.position) < 1.7) {
         burst(ship.position, 0x22d3ee);
         scene.remove(m); enemies.splice(i, 1);
-        lives--; invuln = 2;
+        lives--; invuln = 2.6;
         GX.boom(0.25);
         if (lives <= 0) { gameOver(); }
       }

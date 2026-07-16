@@ -91,14 +91,14 @@ function spawnRow(z) {
 
 /* state */
 let state = 'menu', laneIdx = 1, x = 0, y = 0.8, vy = 0, grounded = true;
-let speed = 22, distT = 0, coinCount = 0, nextSpawn = -60;
+let speed = 17, distT = 0, coinCount = 0, nextSpawn = -60;
 
 function reset() {
   for (const o of obstacles) scene.remove(o.mesh);
   for (const c of coins) scene.remove(c.mesh);
   obstacles = []; coins = [];
   laneIdx = 1; x = 0; y = 0.8; vy = 0; grounded = true;
-  speed = 22; distT = 0; coinCount = 0; nextSpawn = -60;
+  speed = 17; distT = 0; coinCount = 0; nextSpawn = -60;
   orb.position.set(0, 0.8, 0);
   state = 'play';
   GX.hide();
@@ -141,7 +141,7 @@ function frame() {
   t += dt;
 
   if (state === 'play') {
-    speed = Math.min(58, speed + 0.7 * dt);
+    speed = Math.min(44, speed + 0.45 * dt);
     distT += speed * dt;
 
     // lateral + vertical motion
@@ -160,7 +160,7 @@ function frame() {
     nextSpawn += speed * dt;
     if (nextSpawn >= 0) {
       spawnRow(-VIEW + 40);
-      nextSpawn = -Math.max(26, 44 - speed * 0.25);
+      nextSpawn = -Math.max(36, 56 - speed * 0.25);
     }
 
     // obstacles
@@ -168,7 +168,7 @@ function frame() {
       const o = obstacles[i];
       o.mesh.position.z += speed * dt;
       if (o.mesh.position.z > 8) { scene.remove(o.mesh); obstacles.splice(i, 1); continue; }
-      if (Math.abs(o.mesh.position.z) < 1.0 && Math.abs(o.mesh.position.x - x) < 1.6) {
+      if (Math.abs(o.mesh.position.z) < 0.85 && Math.abs(o.mesh.position.x - x) < 1.45) {
         const clearHeight = o.type === 'low' ? 1.1 : 99;
         if (y - 0.8 < clearHeight) { crash(); break; }
       }

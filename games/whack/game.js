@@ -73,12 +73,12 @@ function spawn() {
   const free = slots.filter(s => s.phase === 'down');
   if (!free.length) return;
   const s = free[Math.floor(Math.random() * free.length)];
-  s.bomb = Math.random() < 0.16;
+  s.bomb = Math.random() < 0.11;
   s.bot = makeBot(s.bomb);
   s.bot.position.set(s.x, -2.2, s.z);
   scene.add(s.bot);
   s.phase = 'rising'; s.t = 0;
-  s.upFor = Math.max(0.55, 1.25 - elapsed * 0.014);
+  s.upFor = Math.max(0.8, 1.55 - elapsed * 0.012);
 }
 
 function hideBot(s) {
@@ -123,9 +123,9 @@ addEventListener('pointerdown', e => {
     const hit = ray.intersectObject(s.bot, true);
     if (hit.length) {
       if (s.bomb) {
-        score = Math.max(0, score - 30);
+        score = Math.max(0, score - 20);
         combo = 0;
-        flash('-30 BOMB!', '#f87171');
+        flash('-20 BOMB!', '#f87171');
         GX.boom(0.3);
       } else {
         combo++;

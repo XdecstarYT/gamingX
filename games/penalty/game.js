@@ -151,7 +151,7 @@ function shoot() {
 
   // high power = faster but wilder
   let tx = aimX, ty = aimY;
-  const wild = Math.max(0, power - 0.75) * 9;
+  const wild = Math.max(0, power - 0.85) * 7;
   tx += (Math.random() - 0.5) * (0.5 + wild);
   ty += (Math.random() - 0.5) * (0.4 + wild * 0.7) + power * 0.3;
 
@@ -164,9 +164,9 @@ function shoot() {
     zone: zoneOf(tx, ty),
   };
 
-  // keeper picks a zone: 55% reads your corner column, else random
+  // keeper picks a zone: 38% reads your corner column, else random
   let kz;
-  if (Math.random() < 0.55) {
+  if (Math.random() < 0.38) {
     const col = shot.zone % 3;
     kz = col + (Math.random() < 0.5 ? 0 : 3);
   } else kz = Math.floor(Math.random() * 6);
@@ -184,7 +184,7 @@ function resolveShot() {
   if (shot.offTarget) {
     goal = false;
     flash('WIDE!', '#f87171');
-  } else if (kz === shot.zone && power < 0.88) {
+  } else if (kz === shot.zone && power < 0.78) {
     goal = false;
     flash('SAVED!', '#f87171');
     GX.boom(0.2);
@@ -204,8 +204,8 @@ function resolveShot() {
 }
 
 function cpuKick() {
-  // CPU converts ~72%
-  const goal = Math.random() < 0.72;
+  // CPU converts ~62%
+  const goal = Math.random() < 0.62;
   if (goal) cpuScore++;
   cpuKicks.push(goal);
   flash(goal ? 'CPU SCORES' : 'CPU MISSES!', goal ? '#f87171' : '#4ade80');

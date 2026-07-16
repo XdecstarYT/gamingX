@@ -128,7 +128,7 @@ function pressEnd() {
   const speed = 8.2 + power * 8.2;
   const dirF = new THREE.Vector3(toRim.x / flat, 0, toRim.z / flat);
   const side = new THREE.Vector3(-dirF.z, 0, dirF.x);
-  dirF.addScaledVector(side, aimSide * 0.28).normalize();
+  dirF.addScaledVector(side, aimSide * 0.18).normalize();
   const elev = 0.98;   // ~56 degrees
   vel.set(dirF.x * Math.cos(elev) * speed, Math.sin(elev) * speed, dirF.z * Math.cos(elev) * speed);
   GX.beep(300, 0.08, 'sine', 0.06, 200);
@@ -175,8 +175,8 @@ function frame() {
 
       // rim interaction at rim height
       const flatD = Math.hypot(ball.position.x - RIM.x, ball.position.z - RIM.z);
-      if (Math.abs(ball.position.y - RIM.y) < 0.22) {
-        if (vel.y < 0 && flatD < RIM_R - BALL_R * 0.5 && !scored) {
+      if (Math.abs(ball.position.y - RIM.y) < 0.3) {
+        if (vel.y < 0 && flatD < RIM_R - BALL_R * 0.2 && !scored) {
           scored = true;
           const swish = !touched;
           const pts = spot.pts + (swish ? 1 : 0);

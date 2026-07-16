@@ -147,7 +147,7 @@ function spawnTraffic() {
   mesh.position.set(LANES[lane], 0, -VIEW + 20);
   mesh.rotation.y = 0;
   scene.add(mesh);
-  traffic.push({ mesh, lane, speed: 16 + Math.random() * 10 });
+  traffic.push({ mesh, lane, speed: 20 + Math.random() * 10 });
 }
 
 /* loop */
@@ -158,7 +158,7 @@ function frame() {
 
   if (state === 'play') {
     // speed & nitro
-    speed = Math.min(80, speed + 1.1 * dt);
+    speed = Math.min(72, speed + 0.75 * dt);
     let v = speed;
     if (boostHeld && nitro > 0) { v *= 1.55; nitro = Math.max(0, nitro - 34 * dt); }
     else nitro = Math.min(100, nitro + 9 * dt);
@@ -177,12 +177,12 @@ function frame() {
 
     // traffic
     spawnT -= dt;
-    if (spawnT <= 0) { spawnTraffic(); spawnT = Math.max(0.55, 2.1 - v * 0.018); }
+    if (spawnT <= 0) { spawnTraffic(); spawnT = Math.max(0.85, 2.6 - v * 0.018); }
     for (let i = traffic.length - 1; i >= 0; i--) {
       const t = traffic[i];
       t.mesh.position.z += (v - t.speed) * dt;
       if (t.mesh.position.z > 30) { scene.remove(t.mesh); traffic.splice(i, 1); continue; }
-      if (Math.abs(t.mesh.position.z) < 3.4 && Math.abs(t.mesh.position.x - carX) < 1.85) { crash(); break; }
+      if (Math.abs(t.mesh.position.z) < 3.1 && Math.abs(t.mesh.position.x - carX) < 1.65) { crash(); break; }
     }
 
     GX.hud(`

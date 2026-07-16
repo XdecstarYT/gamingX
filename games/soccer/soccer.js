@@ -51,9 +51,9 @@ const FORMATION = [
 ];
 
 const DIFFICULTY = {
-  easy:   { speed: 0.86, react: 0.55, passAcc: 0.75, tackle: 0.55, shoot: 0.7,  label: 'AMATEUR' },
-  normal: { speed: 1.00, react: 0.80, passAcc: 0.90, tackle: 0.80, shoot: 0.9,  label: 'PRO' },
-  hard:   { speed: 1.10, react: 1.00, passAcc: 1.00, tackle: 1.00, shoot: 1.05, label: 'LEGEND' },
+  easy:   { speed: 0.76, react: 0.35, passAcc: 0.60, tackle: 0.35, shoot: 0.50, label: 'AMATEUR' },
+  normal: { speed: 0.92, react: 0.60, passAcc: 0.80, tackle: 0.60, shoot: 0.75, label: 'PRO' },
+  hard:   { speed: 1.06, react: 0.90, passAcc: 0.97, tackle: 0.90, shoot: 1.00, label: 'LEGEND' },
 };
 
 /* ============================== AUDIO ================================ */
@@ -657,7 +657,7 @@ function aiFieldPlayer(p, dt, chasers) {
     // lunge tackle
     if (b.owner && b.owner.team !== p.team && p.lungeCd <= 0 && p.lungeT <= 0) {
       const d = dist(p.x, p.y, b.owner.x, b.owner.y);
-      if (d < 30 && Math.random() < df.tackle * (isCpu ? 6 : 5) * dt) {
+      if (d < 30 && Math.random() < df.tackle * (isCpu ? 4 : 5) * dt) {
         const dx = b.owner.x - p.x, dy = b.owner.y - p.y, m = Math.hypot(dx, dy) || 1;
         p.lungeDx = dx / m; p.lungeDy = dy / m;
         p.lungeT = 0.26; p.lungeCd = 0.9;

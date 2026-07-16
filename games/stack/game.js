@@ -58,7 +58,7 @@ function newBlock() {
   const mesh = makeBlock(p.w, p.d, layer);
   mesh.position.set(axis === 'x' ? -RANGE : p.x, layer * BLOCK_H, axis === 'z' ? -RANGE : p.z);
   cur = { mesh, w: p.w, d: p.d, x: mesh.position.x, z: mesh.position.z };
-  oscSpeed = Math.min(3.4, 1.5 + layer * 0.045);
+  oscSpeed = Math.min(2.6, 1.2 + layer * 0.03);
   t = 0;
 }
 
@@ -86,7 +86,7 @@ function drop() {
     return;
   }
 
-  if (Math.abs(delta) < 0.32) {
+  if (Math.abs(delta) < 0.5) {
     // perfect
     combo++;
     score += 2 + combo * 2;

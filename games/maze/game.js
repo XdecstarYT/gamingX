@@ -53,7 +53,7 @@ function buildLevel(levelNum) {
   if (exitLight) scene.remove(exitLight);
   wallMeshes = [];
 
-  const cells = Math.min(10, 5 + levelNum);
+  const cells = Math.min(9, 4 + levelNum);
   mazeN = cells * 2 + 1;
   walls = genMaze(cells);
 
@@ -115,7 +115,7 @@ function flash(txt) {
 }
 
 function reset() {
-  level = 1; score = 0; timeLeft = 75;
+  level = 1; score = 0; timeLeft = 100;
   buildLevel(level);
   state = 'play';
   GX.hide();
@@ -126,7 +126,7 @@ function nextLevel() {
   const bonus = Math.floor(timeLeft) * 5 + level * 100;
   score += bonus;
   level++;
-  timeLeft += 45;
+  timeLeft += 55;
   flash('ESCAPED! +' + bonus);
   GX.beep(523, 0.12, 'triangle', 0.09);
   GX.beep(784, 0.2, 'triangle', 0.09);

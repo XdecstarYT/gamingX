@@ -180,7 +180,7 @@ function run(canvas, level, cbs) {
     w: 0.68, h: 0.86, face: 1, grounded: false,
     coyote: 0, jumpBuf: 0, invuln: 0,
   };
-  let lives = 3, coins = 0, score = 0, time = 0, stateT = 0;
+  let lives = 4, coins = 0, score = 0, time = 0, stateT = 0;
   let state = 'ready';   // ready | play | dead | won | lost
   let banner = { text: 'READY?', t: 0 };
   let camX = 0, camY = 0;
@@ -240,7 +240,7 @@ function run(canvas, level, cbs) {
   }
   function respawn() {
     P.x = spawn.x; P.y = spawn.y; P.vx = 0; P.vy = 0;
-    P.invuln = 1.4;
+    P.invuln = 2.2;
     state = 'play';
   }
   function win() {
@@ -377,7 +377,7 @@ function run(canvas, level, cbs) {
           const ahead = e.x + e.dir * 0.5;
           if (solid(Math.floor(ahead + e.dir * 0.05), Math.floor(e.y))) e.dir *= -1;
         }
-        e.x += e.dir * 2.6 * dt;
+        e.x += e.dir * 2.1 * dt;
       } else {
         e.phase += dt;
         e.y = e.baseY + Math.sin(e.phase * 2.2) * 1.6;
@@ -385,7 +385,7 @@ function run(canvas, level, cbs) {
 
       // player contact
       const dx = Math.abs(e.x - P.x), dy = e.y - P.y;
-      if (dx < 0.62 && Math.abs(dy) < 0.7 && state === 'play') {
+      if (dx < 0.54 && Math.abs(dy) < 0.6 && state === 'play') {
         const stomp = mode === 'platformer' && P.vy > 3 && dy > 0.15;
         if (stomp) {
           e.alive = false;

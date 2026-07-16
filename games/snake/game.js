@@ -41,7 +41,7 @@ const food = new THREE.Mesh(new THREE.SphereGeometry(0.45, 16, 12),
 scene.add(food);
 
 let state = 'menu', snake = [], segMeshes = [], dir = { x: 1, z: 0 }, queue = [];
-let foodCell = { x: 4, z: 0 }, tick = 0, tickLen = 0.16, score = 0, t = 0;
+let foodCell = { x: 4, z: 0 }, tick = 0, tickLen = 0.19, score = 0, t = 0;
 
 function cellFree(x, z) { return !snake.some(s => s.x === x && s.z === z); }
 function placeFood() {
@@ -69,7 +69,7 @@ function syncMeshes() {
 function reset() {
   snake = [{ x: -2, z: 0 }, { x: -3, z: 0 }, { x: -4, z: 0 }];
   dir = { x: 1, z: 0 }; queue = [];
-  tickLen = 0.16; tick = 0; score = 0;
+  tickLen = 0.19; tick = 0; score = 0;
   placeFood();
   syncMeshes();
   state = 'play';
@@ -96,7 +96,7 @@ function step() {
   snake.unshift(head);
   if (head.x === foodCell.x && head.z === foodCell.z) {
     score += 10;
-    tickLen = Math.max(0.07, tickLen - 0.0035);
+    tickLen = Math.max(0.095, tickLen - 0.0025);
     placeFood();
     GX.beep(760, 0.07, 'triangle', 0.06);
   } else {
