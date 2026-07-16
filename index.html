@@ -46,6 +46,19 @@
         </div>
       </a>
 
+      <a class="gx-card gx-card-live gx-card-studio" href="games/studio/index.html">
+        <div class="gx-card-art art-studio"><span class="art-emoji">🧊</span></div>
+        <div class="gx-card-body">
+          <div class="gx-card-top">
+            <h3>GX Studio</h3>
+            <span class="gx-badge gx-badge-studio">3D ENGINE</span>
+          </div>
+          <p>A real-time 3D game engine, in your browser. Build scenes with a hierarchy, transform gizmos and PBR materials, wire up rigid-body physics and lights, script gameplay in plain JS, then hit Play.</p>
+          <div class="gx-tags"><span>Physics</span><span>Scripting</span><span>Bloom &amp; shadows</span></div>
+          <div class="gx-play">🧊 OPEN THE ENGINE</div>
+        </div>
+      </a>
+
       <a class="gx-card gx-card-live" href="games/soccer/index.html">
         <div class="gx-card-art art-soccer">
           <div class="pitch-lines"></div>
@@ -197,12 +210,13 @@
 
   <section id="creations" class="gx-section">
     <h2 class="gx-section-title">My Creations</h2>
-    <p class="gx-creations-intro">Games you've built and published in <a class="gx-inline-link" href="games/create/index.html">GX Forge</a>. They live in this browser — share them with the Forge share code.</p>
+    <p class="gx-creations-intro">Games and scenes you've built and published in <a class="gx-inline-link" href="games/create/index.html">GX Forge</a> or <a class="gx-inline-link" href="games/studio/index.html">GX Studio</a>. They live in this browser — share them with a share code.</p>
     <div class="gx-grid" id="creations-grid"></div>
     <div class="gx-creations-empty" id="creations-empty">
       <span>🛠️</span>
-      <p>Nothing here yet. Open <b>GX Forge</b>, paint a level, hit <b>Publish</b> — and your game appears right here.</p>
-      <a class="gx-btn gx-btn-primary" href="games/create/index.html">Create your first game</a>
+      <p>Nothing here yet. Open <b>GX Forge</b> or <b>GX Studio</b>, build something, hit <b>Publish</b> — and it appears right here.</p>
+      <a class="gx-btn gx-btn-primary" href="games/create/index.html">Create a 2D game</a>
+      <a class="gx-btn" href="games/studio/index.html" style="margin-top:10px">Build a 3D scene</a>
     </div>
   </section>
 
@@ -250,16 +264,16 @@
       else el.remove();
     });
   }catch(e){}
-  // My Creations (published GX Forge games)
+  // My Creations (published GX Forge games + GX Studio scenes)
   try{
     var esc = function(s){ return String(s).replace(/[&<>"]/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); };
-    var projects = JSON.parse(localStorage.getItem('gamingx.forge.projects') || '[]')
-      .filter(function(p){ return p.published; })
-      .sort(function(a,b){ return b.updated - a.updated; });
+    var forgeProjects = JSON.parse(localStorage.getItem('gamingx.forge.projects') || '[]').filter(function(p){ return p.published; });
+    var studioProjects = JSON.parse(localStorage.getItem('gamingx.studio.projects') || '[]').filter(function(p){ return p.published; });
     var grid = document.getElementById('creations-grid');
-    if (projects.length) {
+    var any = forgeProjects.length || studioProjects.length;
+    if (any) {
       document.getElementById('creations-empty').style.display = 'none';
-      projects.forEach(function(p){
+      forgeProjects.sort(function(a,b){ return b.updated - a.updated; }).forEach(function(p){
         var hi = parseInt(localStorage.getItem('gamingx.hi.forge.' + p.id), 10);
         var a = document.createElement('a');
         a.className = 'gx-card gx-card-live';
@@ -270,6 +284,20 @@
             '<div class="gx-card-top"><h3>' + esc(p.title || 'Untitled') + '</h3><span class="gx-badge gx-badge-forge">MY GAME</span></div>' +
             '<p>' + (p.mode === 'topdown' ? 'Top-down' : 'Platformer') + ' · ' + p.w + '×' + p.h +
               (p.requireCoins ? ' · collect-all-coins' : '') + (hi ? ' · ★ Best ' + hi : '') + '</p>' +
+            '<div class="gx-play">▶ PLAY NOW</div>' +
+          '</div>';
+        grid.appendChild(a);
+      });
+      studioProjects.sort(function(a,b){ return b.updated - a.updated; }).forEach(function(p){
+        var hi = parseInt(localStorage.getItem('gamingx.hi.studio.' + p.id), 10);
+        var a = document.createElement('a');
+        a.className = 'gx-card gx-card-live';
+        a.href = 'games/studio/play.html?id=' + encodeURIComponent(p.id);
+        a.innerHTML =
+          '<div class="gx-card-art art-studio"><span class="art-emoji">🧊</span></div>' +
+          '<div class="gx-card-body">' +
+            '<div class="gx-card-top"><h3>' + esc(p.title || 'Untitled') + '</h3><span class="gx-badge gx-badge-studio">MY 3D SCENE</span></div>' +
+            '<p>3D scene · ' + (p.entities ? p.entities.length : 0) + ' objects' + (hi ? ' · ★ Best ' + hi : '') + '</p>' +
             '<div class="gx-play">▶ PLAY NOW</div>' +
           '</div>';
         grid.appendChild(a);

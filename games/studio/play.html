@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Play — GX Studio — GamingX</title>
+<link rel="stylesheet" href="../../assets/css/game-ui.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧊</text></svg>">
+<style>
+  #viewport{position:fixed;inset:0;width:100%;height:100%;display:block}
+</style>
+</head>
+<body>
+<div class="gx-topbar">
+  <a class="gx-back" href="../../index.html">← GAMINGX</a>
+  <div class="gx-hud" id="hud"></div>
+</div>
+<div id="overlay" class="gx-overlay">
+  <div class="gx-panel">
+    <h1 id="ov-title"></h1>
+    <p id="ov-sub"></p>
+    <div id="ov-buttons"></div>
+  </div>
+</div>
+<canvas id="viewport"></canvas>
+
+<script src="../../assets/js/three.min.js"></script>
+<script src="../../assets/js/vendor/Pass.js"></script>
+<script src="../../assets/js/vendor/EffectComposer.js"></script>
+<script src="../../assets/js/vendor/RenderPass.js"></script>
+<script src="../../assets/js/vendor/ShaderPass.js"></script>
+<script src="../../assets/js/vendor/CopyShader.js"></script>
+<script src="../../assets/js/vendor/LuminosityHighPassShader.js"></script>
+<script src="../../assets/js/vendor/UnrealBloomPass.js"></script>
+<script src="../../assets/js/vendor/cannon-es.global.js"></script>
+<script src="../../assets/js/gx.js"></script>
+<script src="engine.js"></script>
+<script>
+const GXS = window.GXStudio;
+const canvas = document.getElementById('viewport');
+let project = null, runtime = null;
+
+try {
+  const id = new URLSearchParams(location.search).get('id');
+  const list = JSON.parse(localStorage.getItem('gamingx.studio.projects') || '[]');
+  project = list.find(p => p.id === id) || null;
+} catch (e) {}
+
+function esc(s) { return String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }
+
+function menu() {
+  if (!project) {
+    GX.show('SCENE NOT FOUND',
+      'This creation doesn\'t exist on this browser. Scenes made in GX Studio are stored locally — build your own!',
+      [{ label: '🧊 OPEN GX STUDIO', primary: true, cb: () => location.href = 'index.html' },
+       { label: 'GAMINGX HUB', cb: () => location.href = '../../index.html' }]);
+    return;
+  }
+  GX.show(esc(project.title || 'Untitled') + ' <span>· STUDIO</span>',
+    'A full 3D GamingX creation made in GX Studio.<br><b>WASD/Arrows</b> move · <b>Space</b> jump (physics-driven).',
+    [{ label: '▶ PLAY', primary: true, cb: start },
+     { label: '🧊 REMIX IN STUDIO', cb: () => location.href = 'index.html?load=' + project.id },
+     { label: 'GAMINGX HUB', cb: () => location.href = '../../index.html' }]);
+}
+
+function start() {
+  GX.hide();
+  if (!runtime) {
+    runtime = new GXS.Runtime(canvas, project, { onEnd: handleEnd, onLog: () => {} });
+  } else {
+    runtime.loadScene(project);
+  }
+  runtime.play();
+  let last = performance.now();
+  (function frame(t) {
+    if (!runtime || !runtime.playing) return;
+    requestAnimationFrame(frame);
+    const dt = Math.min(0.05, (t - last) / 1000 || 0.016);
+    last = t;
+    runtime.step(dt);
+    runtime.render();
+    GX.hud(`<div class="chip"><small>SCORE</small><b>${runtime.score || 0}</b></div><div class="chip"><small>TIME</small><b>${Math.floor(runtime.time)}s</b></div>`);
+  })(last);
+}
+
+function handleEnd(result) {
+  const hiKey = 'studio.' + project.id;
+  const rec = result.win && GX.setHi(hiKey, runtime.score || 0);
+  GX.show(result.win ? '🏆 LEVEL CLEAR!' : 'GAME OVER',
+    `${result.message || ''}<br>Score: <b>${runtime.score || 0}</b>${rec ? ' — <b>NEW RECORD!</b>' : (GX.hi(hiKey) ? ' · Best: <b>' + GX.hi(hiKey) + '</b>' : '')}`,
+    [{ label: '↻ PLAY AGAIN', primary: true, cb: start },
+     { label: '🧊 REMIX IN STUDIO', cb: () => location.href = 'index.html?load=' + project.id },
+     { label: 'GAMINGX HUB', cb: () => location.href = '../../index.html' }]);
+}
+
+menu();
+</script>
+</body>
+</html>

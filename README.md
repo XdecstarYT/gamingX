@@ -1,6 +1,6 @@
 # 🎮 GamingX
 
-A free browser gaming platform with **11 complete games** — one 2D canvas flagship and ten 3D titles built on **three.js** — plus **GX Forge**, a full game engine and no-code game maker. No build step, no downloads, no sign-ups. Open `index.html` and play.
+A free browser gaming platform with **11 complete games** — one 2D canvas flagship and ten 3D titles built on **three.js** — plus **two creation tools**: GX Forge (2D game maker) and **GX Studio**, a real-time 3D game engine with physics, scripting and a full editor. No build step, no downloads, no sign-ups. Open `index.html` and play.
 
 ## ⚽ Soccer Pro '26 (flagship title)
 
@@ -81,6 +81,24 @@ GX Forge (`games/create/`) is a complete game-creation suite built on the **GX E
 - **My Games** manager (save/load/delete), **Share codes** (export/import games as JSON)
 - **Publish** puts your game on the GamingX hub under **My Creations**, playable via `games/create/play.html?id=…` with per-game high scores
 
+## 🧊 GX Studio — a real-time 3D game engine
+
+GX Studio (`games/studio/`) is GamingX's 3D engine and editor: a genuine component-based, physics-driven, scriptable engine in the spirit of Unity/PlayCanvas — built entirely on **three.js** + **cannon-es**, with zero build step. (It's not chasing Unreal-grade fidelity — no Nanite/Lumen/AAA asset pipeline is realistic for a from-scratch browser engine — but the architecture underneath is the real thing: a scene graph, components, rigid-body physics, and live scripting.)
+
+**The engine** (`engine.js`):
+- **Entities** with a fixed Unity-style component model: Transform (always present), Mesh Renderer, Light, Camera, RigidBody, and any number of Scripts, arranged in a parent/child hierarchy
+- **Rendering**: PBR materials (color/metalness/roughness/emissive/opacity/wireframe), directional/point/spot/ambient lights with shadow mapping, a procedural sky gradient + exponential fog, ACES filmic tone mapping, and a genuine **UnrealBloomPass** glow pass (the proper two-composer selective-bloom technique, not just a naive single pass)
+- **Physics**: full rigid-body simulation via `cannon-es` — mass, box/sphere/cylinder colliders, friction, restitution, fixed rotation, collision events — stepped on a fixed timestep accumulator
+- **Scripting**: attach any number of plain-JS scripts to any entity. Each gets an `onStart`/`onUpdate`/`onCollide` and a rich `api`: read/write transform, RigidBody velocity, `isGrounded()`, `find()`/`findAll()` by name/tag, `distance()`, `spawn()`/`destroy()`, a built-in `score`, `end({win, message})` to finish the game, and `log()` piped to an in-editor console. Top-level variables in a script persist as that script instance's state, closure-style
+- Scene (de)serialization to JSON for save/load/publish, exactly like GX Forge
+
+**The editor** (`index.html` + `editor.js`):
+- A real 3-pane layout: **Hierarchy** (scene tree), **Viewport** (orbit camera, click-to-select, move/rotate/scale gizmos via `TransformControls`, Q/W/E/R hotkeys), **Inspector** (Transform + per-component fields, add/remove components, per-script code editor with an API cheat-sheet)
+- **Scene Settings** tab: sky colors, fog, ambient light, gravity, shadows, bloom strength
+- **Add Object** menu: primitives, lights, camera, and ready-made **game prefabs** (Player Controller, Camera Follow, Coin Pickup, Patrol Enemy, Moving Platform, Win Zone, Physics Crate) — each just an entity with a plain-JS script attached, fully editable
+- **Play-in-editor**: press Play to run physics + scripts live in the same viewport (camera switches to the scene's Main Camera); Stop restores the exact pre-Play scene state; a console panel surfaces script errors and `log()` output
+- New-scene templates (Empty / Physics Playground / Arena Adventure), undo, duplicate, My Projects manager, JSON share codes, and **Publish** to the hub's **My Creations**, playable via `games/studio/play.html?id=…`
+
 ## Running locally
 
 No server needed — everything works from `file://`. For a nicer setup:
@@ -99,10 +117,17 @@ assets/css/platform.css     Hub styling
 assets/css/game-ui.css      Shared 3D-game UI (HUD, overlays, meters)
 assets/js/three.min.js      Vendored three.js r128
 assets/js/gx.js             Shared helpers: overlays, HUD, hi-scores, audio
+assets/js/vendor/           Vendored OrbitControls, TransformControls, the
+                            EffectComposer/bloom post-processing chain, and
+                            cannon-es (physics), all as plain classic scripts
 games/soccer/               Soccer Pro '26 (2D canvas flagship)
 games/nitro|void|stack|runner|breaker|
       penalty|snake|maze|hoop|whack/   Ten 3D games (index.html + game.js each)
-games/create/               GX Forge: engine.js (GX Engine runtime),
+games/create/               GX Forge: engine.js (GX Engine 2D runtime),
                             index.html + editor.js/css (level editor),
                             play.html (plays published creations)
+games/studio/                GX Studio: engine.js (3D engine + physics +
+                            scripting runtime), index.html + editor.js/css
+                            (3D scene editor), play.html (plays published
+                            3D scenes)
 ```

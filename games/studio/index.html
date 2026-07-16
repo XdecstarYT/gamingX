@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GX Studio — 3D Engine — GamingX</title>
+<link rel="stylesheet" href="studio.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧊</text></svg>">
+</head>
+<body>
+
+<header class="st-topbar">
+  <a class="st-back" href="../../index.html">← GAMINGX</a>
+  <div class="st-logo">GX <span>STUDIO</span></div>
+  <input id="title-input" class="st-title" maxlength="28" placeholder="Untitled Scene" spellcheck="false">
+
+  <div class="st-tools" id="toolbar">
+    <button class="st-tool" data-tool="select" title="Select (Q)">⟲</button>
+    <button class="st-tool on" data-tool="move" title="Move (W)">✛</button>
+    <button class="st-tool" data-tool="rotate" title="Rotate (E)">↻</button>
+    <button class="st-tool" data-tool="scale" title="Scale (R)">⤢</button>
+  </div>
+
+  <div class="st-actions">
+    <button class="st-btn" id="btn-new">✚ New</button>
+    <button class="st-btn" id="btn-myprojects">📁 Projects</button>
+    <button class="st-btn" id="btn-share">⇄ Share</button>
+    <button class="st-btn" id="btn-save">💾 Save</button>
+    <button class="st-btn st-btn-accent" id="btn-play">▶ Play</button>
+    <button class="st-btn st-btn-primary" id="btn-publish">🚀 Publish</button>
+  </div>
+</header>
+
+<main class="st-main">
+  <aside class="st-hierarchy">
+    <div class="st-side-label">HIERARCHY</div>
+    <button class="st-btn st-wide" id="btn-add">✚ Add Object</button>
+    <div id="hierarchy" class="st-tree"></div>
+  </aside>
+
+  <section class="st-viewport-wrap" id="viewport-wrap">
+    <canvas id="viewport"></canvas>
+    <div class="st-viewstats" id="viewstats"></div>
+    <div class="st-playbadge hidden" id="playbadge">▶ PLAYING — Esc to stop</div>
+    <div class="st-gamehud hidden" id="gamehud"></div>
+    <div class="st-endcard hidden" id="endcard">
+      <div class="st-endcard-box">
+        <h2 id="end-title"></h2>
+        <p id="end-msg"></p>
+        <button class="st-btn st-btn-primary" id="btn-endcard-stop">■ BACK TO EDITOR</button>
+      </div>
+    </div>
+  </section>
+
+  <aside class="st-inspector">
+    <div class="st-tabs">
+      <button class="st-tab on" data-tab="entity">ENTITY</button>
+      <button class="st-tab" data-tab="scene">SCENE</button>
+    </div>
+    <div id="inspector-entity" class="st-panel"></div>
+    <div id="inspector-scene" class="st-panel hidden"></div>
+  </aside>
+</main>
+
+<footer class="st-console">
+  <div class="st-console-bar" id="console-toggle">
+    <span>CONSOLE</span>
+    <button class="st-btn st-btn-tiny" id="btn-clear-console">Clear</button>
+  </div>
+  <div class="st-console-log" id="console-log"></div>
+</footer>
+
+<div class="st-modal hidden" id="modal">
+  <div class="st-modal-box" id="modal-box"></div>
+</div>
+
+<script src="../../assets/js/three.min.js"></script>
+<script src="../../assets/js/vendor/OrbitControls.js"></script>
+<script src="../../assets/js/vendor/TransformControls.js"></script>
+<script src="../../assets/js/vendor/Pass.js"></script>
+<script src="../../assets/js/vendor/EffectComposer.js"></script>
+<script src="../../assets/js/vendor/RenderPass.js"></script>
+<script src="../../assets/js/vendor/ShaderPass.js"></script>
+<script src="../../assets/js/vendor/CopyShader.js"></script>
+<script src="../../assets/js/vendor/LuminosityHighPassShader.js"></script>
+<script src="../../assets/js/vendor/UnrealBloomPass.js"></script>
+<script src="../../assets/js/vendor/cannon-es.global.js"></script>
+<script src="engine.js"></script>
+<script src="editor.js"></script>
+</body>
+</html>
