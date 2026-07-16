@@ -114,6 +114,7 @@ function crash() {
   meter.style.display = 'none';
   const score = Math.floor(distT);
   const rec = GX.setHi(SLUG, score);
+  if (rec) GX.celebrate();
   GX.show('WRECKED!', `You covered <b>${score} m</b>.${rec ? ' <b>NEW RECORD!</b>' : ' Best: ' + GX.hi(SLUG) + ' m'}`,
     [{ label: '↻ DRIVE AGAIN', primary: true, cb: reset },
      { label: 'GAMINGX HUB', cb: () => location.href = '../../index.html' }]);

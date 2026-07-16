@@ -102,6 +102,7 @@ function gameOver() {
   state = 'over';
   meter.style.display = 'none';
   const rec = GX.setHi(SLUG, score);
+  if (rec) GX.celebrate();
   GX.show('FULL TIME', `You scored <b>${score}</b> points.${rec ? ' <b>NEW RECORD!</b>' : ' Best: ' + GX.hi(SLUG)}`,
     [{ label: '↻ PLAY AGAIN', primary: true, cb: reset },
      { label: 'GAMINGX HUB', cb: () => location.href = '../../index.html' }]);
@@ -182,6 +183,7 @@ function frame() {
           const pts = spot.pts + (swish ? 1 : 0);
           score += pts;
           flash(swish ? `SWISH! +${pts}` : `+${pts}`);
+          if (swish) GX.confetti(40);
           GX.beep(700, 0.1, 'triangle', 0.08);
           GX.beep(1050, 0.18, 'triangle', 0.08);
         } else if (Math.abs(flatD - RIM_R) < BALL_R * 0.9 && !scored) {

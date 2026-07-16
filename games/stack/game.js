@@ -93,6 +93,7 @@ function drop() {
     if (a === 'x') cur.mesh.position.x = p.x; else cur.mesh.position.z = p.z;
     flash('PERFECT! ×' + combo);
     GX.beep(660 + combo * 60, 0.1, 'triangle', 0.08);
+    if (combo > 0 && combo % 5 === 0) GX.confetti(50);
   } else {
     combo = 0;
     score += 1;
@@ -132,6 +133,7 @@ function gameOver() {
   GX.boom(0.25);
   const h = layer - 1;
   const rec = GX.setHi(SLUG, score);
+  if (rec) GX.celebrate();
   GX.show('TOWER DOWN', `Height: <b>${h} block${h === 1 ? '' : 's'}</b> · Score: <b>${score}</b>${rec ? ' — <b>NEW RECORD!</b>' : '<br>Best: ' + GX.hi(SLUG)}`,
     [{ label: '↻ STACK AGAIN', primary: true, cb: reset },
      { label: 'GAMINGX HUB', cb: () => location.href = '../../index.html' }]);

@@ -80,6 +80,7 @@ function gameOver() {
   state = 'over';
   GX.boom(0.25);
   const rec = GX.setHi(SLUG, score);
+  if (rec) GX.celebrate();
   GX.show('GAME OVER', `Score: <b>${score}</b> · Length ${snake.length}.${rec ? ' <b>NEW RECORD!</b>' : ' Best: ' + GX.hi(SLUG)}`,
     [{ label: '↻ PLAY AGAIN', primary: true, cb: reset },
      { label: 'GAMINGX HUB', cb: () => location.href = '../../index.html' }]);

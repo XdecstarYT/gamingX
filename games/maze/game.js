@@ -128,6 +128,7 @@ function nextLevel() {
   level++;
   timeLeft += 55;
   flash('ESCAPED! +' + bonus);
+  GX.confetti(70);
   GX.beep(523, 0.12, 'triangle', 0.09);
   GX.beep(784, 0.2, 'triangle', 0.09);
   buildLevel(level);
@@ -138,6 +139,7 @@ function gameOver() {
   document.exitPointerLock && document.exitPointerLock();
   GX.boom(0.2);
   const rec = GX.setHi(SLUG, score);
+  if (rec) GX.celebrate();
   GX.show("TIME'S UP", `You escaped <b>${level - 1}</b> maze${level - 1 === 1 ? '' : 's'} — Score: <b>${score}</b>${rec ? ' <b>NEW RECORD!</b>' : '<br>Best: ' + GX.hi(SLUG)}`,
     [{ label: '↻ TRY AGAIN', primary: true, cb: reset },
      { label: 'GAMINGX HUB', cb: () => location.href = '../../index.html' }]);

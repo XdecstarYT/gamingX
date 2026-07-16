@@ -124,6 +124,7 @@ function gameOver() {
   state = 'over';
   GX.boom(0.35);
   const rec = GX.setHi(SLUG, score);
+  if (rec) GX.celebrate();
   GX.show('SHIP DESTROYED', `Score: <b>${score}</b> — Wave ${wave}.${rec ? ' <b>NEW RECORD!</b>' : ' Best: ' + GX.hi(SLUG)}`,
     [{ label: '↻ RELAUNCH', primary: true, cb: reset },
      { label: 'GAMINGX HUB', cb: () => location.href = '../../index.html' }]);
@@ -208,7 +209,7 @@ function frame() {
         scene.remove(m); enemies.splice(i, 1);
         score += e.pts * wave; kills++;
         GX.beep(160, 0.12, 'sawtooth', 0.07, -80);
-        if (kills >= wave * 10) { wave++; flash('WAVE ' + wave); GX.beep(520, 0.2, 'triangle', 0.08, 200); }
+        if (kills >= wave * 10) { wave++; flash('WAVE ' + wave); GX.beep(520, 0.2, 'triangle', 0.08, 200); GX.confetti(60); }
         continue;
       }
       // ship collision

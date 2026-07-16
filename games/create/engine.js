@@ -248,6 +248,40 @@ function run(canvas, level, cbs) {
     score += Math.max(0, 3000 - Math.floor(time) * 25);
     banner = { text: 'LEVEL CLEAR!', t: 0 };
     beep(523, 0.12, 'triangle', 0.09); beep(659, 0.12, 'triangle', 0.09, 0, 0.13); beep(784, 0.3, 'triangle', 0.1, 0, 0.26);
+    spawnConfetti(110);
+  }
+
+  /* confetti burst, screen-space particles (self-contained, like the rest of the engine) */
+  const CONFETTI_COLORS = ['#22d3ee', '#a855f7', '#fde047', '#4ade80', '#f87171', '#38bdf8', '#fb923c'];
+  let confetti = [];
+  function spawnConfetti(n) {
+    for (let i = 0; i < n; i++) {
+      confetti.push({
+        x: canvas.width / 2 + (Math.random() - 0.5) * canvas.width * 0.3,
+        y: canvas.height * 0.3,
+        vx: (Math.random() - 0.5) * 340, vy: -(Math.random() * 300 + 160),
+        w: Math.random() * 6 + 4, h: Math.random() * 10 + 6,
+        rot: Math.random() * 6.28, vr: (Math.random() - 0.5) * 9,
+        color: CONFETTI_COLORS[(Math.random() * CONFETTI_COLORS.length) | 0],
+      });
+    }
+  }
+  function updateConfetti(dt) {
+    for (let i = confetti.length - 1; i >= 0; i--) {
+      const p = confetti[i];
+      p.vy += 620 * dt;
+      p.x += p.vx * dt; p.y += p.vy * dt; p.rot += p.vr * dt;
+      if (p.y > canvas.height) confetti.splice(i, 1);
+    }
+  }
+  function drawConfetti() {
+    for (const p of confetti) {
+      ctx.save();
+      ctx.translate(p.x, p.y); ctx.rotate(p.rot);
+      ctx.fillStyle = p.color;
+      ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+      ctx.restore();
+    }
   }
 
   /* tiny synth (independent of gx.js so the engine is portable) */
@@ -495,6 +529,7 @@ function run(canvas, level, cbs) {
       ctx.fillText(banner.text, cw / 2, ch * 0.35);
       ctx.globalAlpha = 1;
     }
+    drawConfetti();
   }
 
   /* main loop */
@@ -507,6 +542,7 @@ function run(canvas, level, cbs) {
     last = t;
     stateT += dt;
     if (banner.text) banner.t += dt;
+    updateConfetti(dt);
 
     if (state === 'ready') {
       if (stateT > 0.9) { state = 'play'; banner = { text: 'GO!', t: 0 }; }

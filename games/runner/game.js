@@ -109,6 +109,7 @@ function crash() {
   GX.boom(0.3);
   const score = Math.floor(distT + coinCount * 10);
   const rec = GX.setHi(SLUG, score);
+  if (rec) GX.celebrate();
   GX.show('CRASHED!', `Score: <b>${score}</b> (${Math.floor(distT)} m + ${coinCount} coins)${rec ? ' — <b>NEW RECORD!</b>' : '<br>Best: ' + GX.hi(SLUG)}`,
     [{ label: '↻ RUN AGAIN', primary: true, cb: reset },
      { label: 'GAMINGX HUB', cb: () => location.href = '../../index.html' }]);
@@ -183,6 +184,7 @@ function frame() {
         scene.remove(c.mesh); coins.splice(i, 1);
         coinCount++;
         GX.beep(980, 0.07, 'triangle', 0.06);
+        if (coinCount % 15 === 0) GX.confetti(50);
       }
     }
 

@@ -105,6 +105,7 @@ function reset() {
 function gameOver() {
   state = 'over';
   const rec = GX.setHi(SLUG, score);
+  if (rec) GX.celebrate();
   GX.show('SHIFT OVER', `You scored <b>${score}</b>.${rec ? ' <b>NEW RECORD!</b>' : ' Best: ' + GX.hi(SLUG)}`,
     [{ label: '↻ WHACK AGAIN', primary: true, cb: reset },
      { label: 'GAMINGX HUB', cb: () => location.href = '../../index.html' }]);
@@ -133,6 +134,7 @@ addEventListener('pointerdown', e => {
         score += pts;
         flash('+' + pts);
         GX.beep(500 + combo * 60, 0.07, 'square', 0.06);
+        if (combo === 5) GX.confetti(50);
       }
       s.phase = 'whacked'; s.t = 0;
       return;

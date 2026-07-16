@@ -98,6 +98,7 @@ function loseBall() {
   if (lives <= 0) {
     state = 'over';
     const rec = GX.setHi(SLUG, score);
+    if (rec) GX.celebrate();
     GX.show('GAME OVER', `Score: <b>${score}</b> — Level ${level}.${rec ? ' <b>NEW RECORD!</b>' : ' Best: ' + GX.hi(SLUG)}`,
       [{ label: '↻ PLAY AGAIN', primary: true, cb: reset },
        { label: 'GAMINGX HUB', cb: () => location.href = '../../index.html' }]);
@@ -179,6 +180,7 @@ function frame() {
         level++;
         ballSpeed = Math.min(21, 12.5 + level * 1.0);
         flash('LEVEL ' + level);
+        GX.confetti(60);
         GX.beep(660, 0.15, 'triangle', 0.08, 300);
         buildBricks(level);
         resetBallOnPaddle();

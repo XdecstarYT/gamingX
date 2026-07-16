@@ -239,6 +239,7 @@ function finish() {
   let streak = won ? (parseInt(sessionStorage.getItem('gx.pk.streak') || '0', 10) + 1) : 0;
   try { sessionStorage.setItem('gx.pk.streak', String(streak)); } catch (e) {}
   const rec = won && GX.setHi(SLUG, streak);
+  if (won) GX.celebrate({ count: rec ? 150 : 100 });
   GX.show(won ? '🏆 YOU WIN THE SHOOTOUT!' : 'SHOOTOUT LOST',
     `Final: <b>YOU ${youScore} — ${cpuScore} CPU</b>` +
     (won ? `<br>Win streak: <b>${streak}</b>${rec ? ' — <b>NEW RECORD!</b>' : ''}` : '<br>Best streak: <b>' + GX.hi(SLUG) + '</b>'),

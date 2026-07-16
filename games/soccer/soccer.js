@@ -234,7 +234,38 @@ const G = {
   camX: W / 2, camY: H / 2,
   shots: [0, 0],
   finished: false,
+  confetti: [],
 };
+
+const CONFETTI_COLORS = ['#22d3ee', '#a855f7', '#fde047', '#4ade80', '#f87171', '#38bdf8', '#fb923c'];
+function spawnConfetti(n) {
+  for (let i = 0; i < n; i++) {
+    G.confetti.push({
+      x: cw / 2 + noise(cw * 0.35), y: ch * 0.3 + noise(50),
+      vx: noise(340), vy: -(rnd(180, 480)),
+      w: rnd(4, 10), h: rnd(6, 16),
+      rot: rnd(0, 6.28), vr: noise(9),
+      color: CONFETTI_COLORS[(Math.random() * CONFETTI_COLORS.length) | 0],
+    });
+  }
+}
+function updateConfetti(dt) {
+  for (let i = G.confetti.length - 1; i >= 0; i--) {
+    const p = G.confetti[i];
+    p.vy += 620 * dt;
+    p.x += p.vx * dt; p.y += p.vy * dt; p.rot += p.vr * dt;
+    if (p.y > ch + 30) G.confetti.splice(i, 1);
+  }
+}
+function drawConfetti() {
+  for (const p of G.confetti) {
+    ctx.save();
+    ctx.translate(p.x, p.y); ctx.rotate(p.rot);
+    ctx.fillStyle = p.color;
+    ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+    ctx.restore();
+  }
+}
 
 function colorsClash(a, b) {
   const hx = c => [1, 3, 5].map(i => parseInt(c.slice(i, i + 2), 16));
@@ -868,6 +899,7 @@ function scoreGoal(team) {
   G.kickTeam = 1 - team;
   G.banner = { text: 'GOOOAL!', sub: G.teams[team].def.name, t: 0, dur: 2.4 };
   Snd.goal();
+  if (team === 0) spawnConfetti(90);
 }
 
 /* ---------------- match clock & flow ---------------- */
@@ -927,6 +959,7 @@ function enterFullTime() {
   saveStats();
   const [h, a] = G.score;
   const title = h > a ? '🏆 YOU WIN!' : h < a ? 'FULL TIME — DEFEAT' : 'FULL TIME — DRAW';
+  if (h > a) spawnConfetti(160);
   showBreak(title, `${G.teams[0].def.short} ${h} — ${a} ${G.teams[1].def.short}`,
     'Shots: ' + G.shots[0] + ' — ' + G.shots[1],
     [
@@ -1043,6 +1076,7 @@ function render() {
   // screen-space HUD
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   drawHUD();
+  drawConfetti();
 }
 
 function drawPitch() {
@@ -1284,6 +1318,7 @@ function frame(t) {
   }
   input.clearEdges();
   updateCamera(G.paused ? 0.0001 : dt);
+  updateConfetti(dt);
   render();
 }
 requestAnimationFrame(frame);
