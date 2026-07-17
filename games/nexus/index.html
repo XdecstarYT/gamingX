@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Project Nexus — GamingX</title>
+<link rel="stylesheet" href="nexus.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌐</text></svg>">
+</head>
+<body>
+
+<!-- ============== MAIN MENU ============== -->
+<div id="screen-menu" class="nx-screen active">
+  <div class="nx-menu-box">
+    <a class="nx-back" href="../../index.html">← GamingX Hub</a>
+    <h1 class="nx-logo">PROJECT<span>NEXUS</span></h1>
+    <p class="nx-tagline">Build a settlement. Grow a civilization. Become a world power.</p>
+    <div class="nx-menu-buttons">
+      <button class="nx-btn nx-btn-primary" id="btn-new-nation">🌱 FOUND A NEW NATION</button>
+      <button class="nx-btn" id="btn-continue">📂 MY NATIONS</button>
+      <button class="nx-btn" id="btn-howto">📖 HOW TO PLAY</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============== HOW TO PLAY ============== -->
+<div id="screen-howto" class="nx-screen">
+  <div class="nx-menu-box nx-wide">
+    <h2 class="nx-screen-title">HOW TO PLAY</h2>
+    <div class="nx-howto-grid">
+      <div><h3>🏗️ Build</h3><p>Pick a building from the Build tab, then click an owned tile on the map to place it. Buildings take time and treasury to complete.</p></div>
+      <div><h3>💰 Economy</h3><p>Tax rates and funding levels (Economy tab) drive treasury, GDP, inflation and debt. Every lever has a trade-off.</p></div>
+      <div><h3>🏛️ Politics</h3><p>Approval, corruption and elections (Politics tab) determine whether you stay in power. Pass laws to shape your nation.</p></div>
+      <div><h3>🔬 Research</h3><p>Research labs and universities generate points. Spend them in the Tech tab to unlock new buildings and bonuses.</p></div>
+      <div><h3>🌍 Diplomacy</h3><p>Trade, ally with, or aid the AI nations sharing your world. Relations remember your past actions.</p></div>
+      <div><h3>⚡ Events</h3><p>Random events will test your nation. Every choice has consequences — there is no single correct answer.</p></div>
+    </div>
+    <div class="nx-menu-buttons"><button class="nx-btn" id="btn-howto-back">← BACK</button></div>
+  </div>
+</div>
+
+<!-- ============== NEW NATION SETUP ============== -->
+<div id="screen-setup" class="nx-screen">
+  <div class="nx-menu-box nx-wide">
+    <h2 class="nx-screen-title">FOUND YOUR NATION</h2>
+    <div class="nx-field">
+      <label>NATION NAME</label>
+      <input type="text" id="setup-name" class="nx-input" maxlength="24" placeholder="e.g. Valtoria" spellcheck="false">
+    </div>
+    <div class="nx-field">
+      <label>MAP SEED</label>
+      <div class="nx-seed-row">
+        <input type="text" id="setup-seed" class="nx-input" placeholder="Random" spellcheck="false">
+        <button class="nx-btn" id="btn-random-seed">🎲 Randomize</button>
+      </div>
+    </div>
+    <div class="nx-field">
+      <label>GOVERNMENT TYPE</label>
+      <div class="nx-gov-grid" id="setup-governments"></div>
+    </div>
+    <div class="nx-menu-buttons">
+      <button class="nx-btn nx-btn-primary" id="btn-found">⚡ FOUND NATION</button>
+      <button class="nx-btn" id="btn-setup-back">← BACK</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============== MY NATIONS (save slots) ============== -->
+<div id="screen-saves" class="nx-screen">
+  <div class="nx-menu-box nx-wide">
+    <h2 class="nx-screen-title">MY NATIONS</h2>
+    <div id="saves-list" class="nx-saves-list"></div>
+    <div class="nx-menu-buttons"><button class="nx-btn" id="btn-saves-back">← BACK</button></div>
+  </div>
+</div>
+
+<!-- ============== GAME SCREEN ============== -->
+<div id="screen-game" class="nx-screen nx-game-screen">
+  <header class="nx-topbar">
+    <button class="nx-icon-btn" id="btn-menu">☰</button>
+    <div class="nx-nation-name" id="hud-nation-name">Nation</div>
+    <div class="nx-date" id="hud-date">Week 0</div>
+    <div class="nx-topstats" id="hud-stats"></div>
+    <div class="nx-speed">
+      <button class="nx-speed-btn" data-speed="0" title="Pause">⏸</button>
+      <button class="nx-speed-btn on" data-speed="1" title="Normal">▶</button>
+      <button class="nx-speed-btn" data-speed="2" title="Fast">▶▶</button>
+      <button class="nx-speed-btn" data-speed="3" title="Fastest">▶▶▶</button>
+    </div>
+  </header>
+
+  <main class="nx-main">
+    <div class="nx-map-wrap" id="map-wrap">
+      <canvas id="map-canvas"></canvas>
+      <div class="nx-map-tip" id="map-tip"></div>
+      <div class="nx-build-hint hidden" id="build-hint">Placing: <b id="build-hint-name"></b> — click an owned tile · <button id="btn-cancel-build">✕ cancel</button></div>
+      <div class="nx-toasts" id="toasts"></div>
+    </div>
+
+    <aside class="nx-dash">
+      <div class="nx-tabs" id="dash-tabs">
+        <button class="nx-tab on" data-tab="overview">Overview</button>
+        <button class="nx-tab" data-tab="build">Build</button>
+        <button class="nx-tab" data-tab="economy">Economy</button>
+        <button class="nx-tab" data-tab="politics">Politics</button>
+        <button class="nx-tab" data-tab="tech">Tech</button>
+        <button class="nx-tab" data-tab="diplomacy">World</button>
+        <button class="nx-tab" data-tab="territory">Territory</button>
+        <button class="nx-tab" data-tab="events">Events</button>
+      </div>
+      <div class="nx-dash-body" id="dash-body"></div>
+    </aside>
+  </main>
+
+  <!-- event modal -->
+  <div class="nx-modal hidden" id="event-modal">
+    <div class="nx-modal-box nx-event-box" id="event-box"></div>
+  </div>
+
+  <!-- generic modal (pause menu, confirmations) -->
+  <div class="nx-modal hidden" id="modal">
+    <div class="nx-modal-box" id="modal-box"></div>
+  </div>
+</div>
+
+<script src="data.js"></script>
+<script src="worldgen.js"></script>
+<script src="simulation.js"></script>
+<script src="ui.js"></script>
+<script src="nexus.js"></script>
+</body>
+</html>

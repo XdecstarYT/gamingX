@@ -1,6 +1,6 @@
 # 🎮 GamingX
 
-A free browser gaming platform with **11 complete games** — one 2D canvas flagship and ten 3D titles built on **three.js** — plus **two creation tools**: GX Forge (2D game maker) and **GX Studio**, a real-time 3D game engine with physics, scripting and a full editor. No build step, no downloads, no sign-ups. Open `index.html` and play.
+A free browser gaming platform with **12 complete games** — one 2D canvas flagship, ten 3D titles built on **three.js**, and **Project Nexus**, a full nation-builder/strategy sim — plus **two creation tools**: GX Forge (2D game maker) and **GX Studio**, a real-time 3D game engine with physics, scripting and a full editor. No build step, no downloads, no sign-ups. Open `index.html` and play.
 
 ## ⚽ Soccer Pro '26 (flagship title)
 
@@ -99,6 +99,22 @@ GX Studio (`games/studio/`) is GamingX's 3D engine and editor: a genuine compone
 - **Play-in-editor**: press Play to run physics + scripts live in the same viewport (camera switches to the scene's Main Camera); Stop restores the exact pre-Play scene state; a console panel surfaces script errors and `log()` output
 - New-scene templates (Empty / Physics Playground / Arena Adventure), undo, duplicate, My Projects manager, JSON share codes, and **Publish** to the hub's **My Creations**, playable via `games/studio/play.html?id=…`
 
+## 🌐 Project Nexus — nation-builder strategy sim
+
+Project Nexus (`games/nexus/`) is GamingX's grand-strategy title: start with a tiny settlement and grow it into a world power, on a procedurally generated planet shared with rival AI nations. It's a genuinely wide simulation — economy, politics, research, diplomacy and world events all feed into each other every tick — built to keep growing over future updates rather than a from-scratch AAA studio deliverable (that scope realistically takes years, not one build).
+
+**World generation** (`worldgen.js`) — seeded value-noise elevation/moisture normalized to a full range, biomes (ocean, coast, plains, forest, hills, mountains, desert, tundra, wetland), resource deposits (iron, coal, oil, gold, fertile soil), downhill-flow rivers, and starting territory claimed for the player plus 4 AI nations, spaced apart on the same map.
+
+**Simulation** (`simulation.js`) — one tick = one week:
+- **Economy**: population growth toward housing capacity, employment vs. available jobs, GDP from built industry/commerce/agriculture, blended tax revenue, building upkeep, debt and compounding interest, inflation driven by debt pressure and deficit spending
+- **Politics**: happiness and approval computed from services/tax burden/pollution/corruption and smoothed over time, elections (for electing governments) that can cost or renew your mandate, 5 AI political parties with shifting support, 6 toggleable laws
+- **Tech**: 6 categories (Energy, Construction, Agriculture, Medicine, Manufacturing, Computing) of interlocking research, unlocking buildings and permanent bonuses
+- **Diplomacy**: 4 AI nations simulated in the background (their own GDP/population/approval), trade agreements, alliances, non-aggression pacts and foreign aid, with a persistent relation score
+- **~30 random events** (earthquakes, pandemics, scandals, breakthroughs, market crashes...) with weighted odds that react to your nation's actual state, each with multiple consequence-bearing choices
+- 21 building types across 10 categories, real construction time, and a JSON save format with a version field for future migrations
+
+**UI** (`ui.js` + `nexus.js`) — a pannable/zoomable canvas map with click-to-place buildings, a tabbed dashboard (Overview, Build, Economy, Politics, Tech, World, Territory, Events) with live sparkline graphs, an event-choice modal, toast notifications, speed controls (pause/1×/2×/3×), and localStorage save slots with autosave.
+
 ## Running locally
 
 No server needed — everything works from `file://`. For a nicer setup:
@@ -130,4 +146,9 @@ games/studio/                GX Studio: engine.js (3D engine + physics +
                             scripting runtime), index.html + editor.js/css
                             (3D scene editor), play.html (plays published
                             3D scenes)
+games/nexus/                Project Nexus: data.js (buildings/tech/events/
+                            governments), worldgen.js (procedural planet),
+                            simulation.js (economy/politics/diplomacy tick
+                            engine), ui.js (map + dashboards), nexus.js
+                            (menus, game loop, save system), index.html/css
 ```
