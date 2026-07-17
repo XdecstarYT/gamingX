@@ -58,6 +58,7 @@ function newGame(opts) {
     militaryUnits: { army: 0, navy: 0, airforce: 0 },
     events: { log: [], pending: null },
     notifications: [],
+    achievements: [],
     score: 0,
   };
   normalizePartySupport(state);
@@ -162,7 +163,19 @@ function tick(state) {
   L.tick(state);   // parliament: bill stages, votes, cabinet, courts, opposition, elections
   maybeEvent(state);
   pushHistory(state);
+  checkAchievements(state);
   state.score = computeScore(state);
+}
+
+function checkAchievements(state) {
+  if (!state.achievements) state.achievements = [];
+  for (const a of D.ACHIEVEMENTS) {
+    if (state.achievements.includes(a.id)) continue;
+    if (a.check(state, D)) {
+      state.achievements.push(a.id);
+      notify(state, `Achievement unlocked: ${a.icon} ${a.name} — ${a.desc}`, 'achievement');
+    }
+  }
 }
 
 function advanceConstruction(state) {

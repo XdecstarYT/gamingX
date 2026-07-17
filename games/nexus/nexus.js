@@ -68,11 +68,38 @@ function renderLoop() {
   if (state) UI.renderMap();
 }
 
+/* ------------------------------------------------------------------ */
+/* auto-turn — optionally auto-click End Turn so pacing isn't tedious  */
+/* ------------------------------------------------------------------ */
+let autoTurn = false;
+let autoTimer = 0;
+function setAutoTurn(on) {
+  autoTurn = on;
+  if (autoTurn) {
+    if (autoTimer) clearInterval(autoTimer);
+    autoTimer = setInterval(() => {
+      if (!canEndTurn()) { setAutoTurn(false); return; }
+      endTurn();
+      if (!canEndTurn()) setAutoTurn(false); // that turn raised an event — hand control back immediately
+    }, 1100);
+  } else if (autoTimer) {
+    clearInterval(autoTimer); autoTimer = 0;
+  }
+  updateAutoTurnButton();
+}
+function updateAutoTurnButton() {
+  const btn = $('btn-auto-turn');
+  btn.classList.toggle('on', autoTurn);
+  btn.textContent = autoTurn ? 'AUTO ❚❚' : 'AUTO ▶';
+}
+$('btn-auto-turn').addEventListener('click', () => setAutoTurn(!autoTurn));
+
 function startGameWith(newState) {
   state = newState;
   if (!state.saveId) state.saveId = 'n' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
   showScreen('screen-game');
   UI.init(state, onChange);
+  setAutoTurn(false);
   updateEndTurnButton();
   if (!rafId) renderLoop();
 }
@@ -157,7 +184,7 @@ function escapeHtml(s) { return String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;
 /* ------------------------------------------------------------------ */
 $('btn-end-turn').addEventListener('click', endTurn);
 $('btn-cancel-build').addEventListener('click', () => UI.cancelBuild());
-$('btn-menu').addEventListener('click', () => showPauseModal());
+$('btn-menu').addEventListener('click', () => { setAutoTurn(false); showPauseModal(); });
 function showPauseModal() {
   const box = $('modal-box');
   box.innerHTML = `<h2>PAUSED</h2>

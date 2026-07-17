@@ -455,6 +455,29 @@ const TERRAIN = {
   wetland: { color: '#3e7d5e', movable: true },
 };
 
+/* ------------------------------------------------------------------ */
+/* Achievements — concrete, checkable short-term goals across every     */
+/* system, so an open-ended sandbox still has things to strive for.     */
+/* check(state) is a pure predicate; ids are permanent, never renamed.  */
+/* ------------------------------------------------------------------ */
+const ACHIEVEMENTS = [
+  { id: 'first_steps', name: 'First Steps', icon: '🌱', desc: 'Reach a population of 500.', check: s => s.stats.population >= 500 },
+  { id: 'boomtown', name: 'Boomtown', icon: '🏙️', desc: 'Reach a population of 5,000.', check: s => s.stats.population >= 5000 },
+  { id: 'metropolis', name: 'Metropolis', icon: '🌆', desc: 'Reach a population of 20,000.', check: s => s.stats.population >= 20000 },
+  { id: 'economic_powerhouse', name: 'Economic Powerhouse', icon: '💰', desc: 'Reach a GDP of 50,000.', check: s => s.stats.gdp >= 50000 },
+  { id: 'debt_free', name: 'Debt Free', icon: '📈', desc: 'Carry zero debt with treasury to spare.', check: s => s.debt === 0 && s.treasury > 5000 && s.meta.tick > 20 },
+  { id: 'tech_pioneer', name: 'Tech Pioneer', icon: '🔬', desc: 'Unlock every technology.', check: (s, D) => s.tech.unlocked.length >= D.TECHS.length },
+  { id: 'lawmaker', name: 'Lawmaker', icon: '📜', desc: 'Get 5 bills through Parliament.', check: s => s.legislature.lawCode.filter(b => b.status !== 'in_committee' && b.status !== 'failed').length >= 5 },
+  { id: 'legislative_machine', name: 'Legislative Machine', icon: '🏛️', desc: 'Get 15 bills through Parliament.', check: s => s.legislature.lawCode.filter(b => b.status !== 'in_committee' && b.status !== 'failed').length >= 15 },
+  { id: 'full_cabinet', name: 'Full Cabinet', icon: '🧑‍💼', desc: 'Fill every cabinet portfolio.', check: (s, D) => Object.keys(s.legislature.cabinet).length >= D.PORTFOLIOS.length },
+  { id: 'executive_power', name: 'Executive Power', icon: '⚡', desc: 'Issue 3 executive orders.', check: s => s.legislature.lawCode.filter(b => b.origin === 'executive').length >= 3 },
+  { id: 'judicial_override', name: 'Judicial Override', icon: '⚖️', desc: 'Have a law struck down by the courts.', check: s => s.legislature.lawCode.some(b => b.status === 'struck_down') },
+  { id: 'world_diplomat', name: 'World Diplomat', icon: '🤝', desc: 'Form an alliance with every nation.', check: s => s.nations.length > 0 && s.nations.every(n => n.alliance) },
+  { id: 'happy_nation', name: 'Happy Nation', icon: '😊', desc: 'Reach 90 happiness.', check: s => s.stats.happiness >= 90 },
+  { id: 'fortress_nation', name: 'Fortress Nation', icon: '🛡️', desc: 'Reach a defense rating of 100.', check: s => s.stats.defense >= 100 },
+  { id: 'long_reign', name: 'Long Reign', icon: '👑', desc: 'Survive 10 years in power.', check: s => s.meta.tick >= 520 },
+];
+
 const NATION_NAMES = [
   'Valtoria', 'Kessland', 'Norvengard', 'Astrelia', 'Duvenrike', 'Merisova',
   'Kaldrun', 'Solantis', 'Brennmark', 'Isaveth', 'Thornwick', 'Elmspire',
@@ -467,6 +490,6 @@ return {
   GOVERNMENTS, GOVERNMENTS_BY_ID, PARTIES, EVENTS, TERRAIN,
   NATION_NAMES, NATION_COLORS,
   BILLS, BILLS_BY_ID, BILL_CATEGORIES, PORTFOLIOS, PORTFOLIOS_BY_ID,
-  LEGISLATOR_FIRST, LEGISLATOR_LAST, CONSTITUENCIES,
+  LEGISLATOR_FIRST, LEGISLATOR_LAST, CONSTITUENCIES, ACHIEVEMENTS,
 };
 })();

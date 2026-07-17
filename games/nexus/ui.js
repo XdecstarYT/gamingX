@@ -384,6 +384,26 @@ function toast(text, kind) {
   el.textContent = text;
   $('toasts').appendChild(el);
   setTimeout(() => el.remove(), 5200);
+  playToastSound(text, kind);
+}
+function playToastSound(text, kind) {
+  const A = window.NexusAudio; if (!A) return;
+  if (kind === 'achievement') { A.achievement(); return; }
+  if (kind === 'warn') { A.warn(); return; }
+  if (kind === 'tech') { A.tech(); return; }
+  if (kind === 'build') { A.place(); return; }
+  if (kind === 'diplomacy') { A.positive(); return; }
+  if (kind === 'law') {
+    if (/FAILED|struck down|repealed/.test(text)) A.negative(); else A.positive();
+    return;
+  }
+  if (kind === 'election') {
+    if (/GOVERNMENT!|returned to power/.test(text)) A.fanfare();
+    else if (/lost power/.test(text)) A.defeat();
+    else A.click();
+    return;
+  }
+  A.click();
 }
 
 /* ------------------------------------------------------------------ */
@@ -850,7 +870,7 @@ function showAppointModal(portfolioId) {
 let archiveSubTab = 'elections';
 function renderArchive(body) {
   const tabs = document.createElement('div'); tabs.className = 'nx-archive-tabs';
-  for (const [key, label] of [['elections', 'Elections'], ['governments', 'Governments'], ['lawcode', 'Law Code'], ['budgets', 'Budgets']]) {
+  for (const [key, label] of [['elections', 'Elections'], ['governments', 'Governments'], ['lawcode', 'Law Code'], ['budgets', 'Budgets'], ['achievements', 'Achievements']]) {
     const btn = document.createElement('button'); btn.textContent = label;
     btn.classList.toggle('on', archiveSubTab === key);
     btn.addEventListener('click', () => { archiveSubTab = key; renderDash(); });
@@ -898,6 +918,16 @@ function renderArchive(body) {
       (h.budgets.slice().reverse().map(b =>
         `<div class="nx-archive-row"><b>Year ${b.year}</b> — Revenue ${fmtMoney(b.revenue)}, Spending ${fmtMoney(b.spending)}, Debt ${fmtMoney(b.debt)}, GDP ${fmtMoney(b.gdp)}, Pop ${fmt(b.population)}</div>`
       ).join('') || '<div class="nx-archive-row">No budget snapshots recorded yet (recorded once per in-game year).</div>');
+  } else if (archiveSubTab === 'achievements') {
+    const unlocked = state.achievements || [];
+    g.innerHTML = `<b class="hd">ACHIEVEMENTS (${unlocked.length}/${D.ACHIEVEMENTS.length})</b>`;
+    for (const a of D.ACHIEVEMENTS) {
+      const done = unlocked.includes(a.id);
+      const card = document.createElement('div'); card.className = 'nx-bill-card' + (done ? ' passed' : '');
+      card.style.opacity = done ? '1' : '.55';
+      card.innerHTML = `<div class="top"><b>${a.icon} ${esc(a.name)}</b><span class="stage">${done ? 'UNLOCKED' : 'LOCKED'}</span></div><div class="ds">${esc(a.desc)}</div>`;
+      g.appendChild(card);
+    }
   }
   body.appendChild(g);
 }

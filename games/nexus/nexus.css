@@ -105,6 +105,13 @@ input,select,textarea{font-family:inherit;color:inherit}
 }
 .nx-endturn:hover{transform:translateY(-1px)}
 .nx-endturn:disabled{opacity:.4;cursor:not-allowed;transform:none}
+.nx-autoturn{
+  padding:10px 16px;border-radius:10px;font-weight:800;font-size:.78rem;letter-spacing:1px;
+  background:var(--panel2);border:1px solid rgba(255,255,255,.12);color:var(--muted);
+  transition:transform .1s,border-color .1s,color .1s;
+}
+.nx-autoturn:hover{transform:translateY(-1px);border-color:rgba(34,211,238,.4)}
+.nx-autoturn.on{background:rgba(34,211,238,.14);border-color:var(--accent);color:var(--accent)}
 
 .nx-main{flex:1;display:flex;min-height:0}
 .nx-map-wrap{flex:1;position:relative;background:#05070d;min-width:0}
@@ -131,6 +138,7 @@ input,select,textarea{font-family:inherit;color:inherit}
 .nx-toast.election{border-left-color:var(--gold)}
 .nx-toast.diplomacy{border-left-color:var(--green)}
 .nx-toast.build{border-left-color:var(--muted)}
+.nx-toast.achievement{border-left-color:#fde047}
 @keyframes nx-toast-in{from{opacity:0;transform:translateX(20px)}to{opacity:1;transform:translateX(0)}}
 
 /* dashboard */
