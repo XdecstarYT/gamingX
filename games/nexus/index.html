@@ -58,6 +58,10 @@
       <label>GOVERNMENT TYPE</label>
       <div class="nx-gov-grid" id="setup-governments"></div>
     </div>
+    <div class="nx-field">
+      <label>YOUR PARTY</label>
+      <div class="nx-gov-grid" id="setup-parties"></div>
+    </div>
     <div class="nx-menu-buttons">
       <button class="nx-btn nx-btn-primary" id="btn-found">⚡ FOUND NATION</button>
       <button class="nx-btn" id="btn-setup-back">← BACK</button>
@@ -81,12 +85,8 @@
     <div class="nx-nation-name" id="hud-nation-name">Nation</div>
     <div class="nx-date" id="hud-date">Week 0</div>
     <div class="nx-topstats" id="hud-stats"></div>
-    <div class="nx-speed">
-      <button class="nx-speed-btn" data-speed="0" title="Pause">⏸</button>
-      <button class="nx-speed-btn on" data-speed="1" title="Normal">▶</button>
-      <button class="nx-speed-btn" data-speed="2" title="Fast">▶▶</button>
-      <button class="nx-speed-btn" data-speed="3" title="Fastest">▶▶▶</button>
-    </div>
+    <div class="nx-gov-status" id="hud-gov-status"></div>
+    <button class="nx-endturn" id="btn-end-turn">END TURN ▸</button>
   </header>
 
   <main class="nx-main">
@@ -103,10 +103,12 @@
         <button class="nx-tab" data-tab="build">Build</button>
         <button class="nx-tab" data-tab="economy">Economy</button>
         <button class="nx-tab" data-tab="politics">Politics</button>
+        <button class="nx-tab" data-tab="parliament">Parliament</button>
         <button class="nx-tab" data-tab="tech">Tech</button>
         <button class="nx-tab" data-tab="diplomacy">World</button>
         <button class="nx-tab" data-tab="territory">Territory</button>
         <button class="nx-tab" data-tab="events">Events</button>
+        <button class="nx-tab" data-tab="archive">Archive</button>
       </div>
       <div class="nx-dash-body" id="dash-body"></div>
     </aside>
@@ -125,6 +127,7 @@
 
 <script src="data.js"></script>
 <script src="worldgen.js"></script>
+<script src="legislature.js"></script>
 <script src="simulation.js"></script>
 <script src="ui.js"></script>
 <script src="nexus.js"></script>

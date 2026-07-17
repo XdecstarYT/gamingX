@@ -139,13 +139,115 @@ const GOVERNMENTS_BY_ID = Object.fromEntries(GOVERNMENTS.map(g => [g.id, g]));
 /* ------------------------------------------------------------------ */
 /* Political parties (used when the current government holds elections) */
 /* ------------------------------------------------------------------ */
+/* econ: -1 (fully left/interventionist) .. +1 (fully right/free-market) —
+   drives how a party's legislators vote on bills against each bill's own
+   ideology score. */
 const PARTIES = [
-  { id: 'progressive', name: 'Progressive Alliance', ideology: 'left-green', color: '#22c55e' },
-  { id: 'liberty', name: 'Liberty Union', ideology: 'right-market', color: '#38bdf8' },
-  { id: 'labor', name: 'Labor Front', ideology: 'left-labor', color: '#ef4444' },
-  { id: 'unity', name: 'National Unity', ideology: 'center-nationalist', color: '#f2b03d' },
-  { id: 'green', name: 'Green Future', ideology: 'environment', color: '#4ade80' },
+  { id: 'progressive', name: 'Progressive Alliance', ideology: 'left-green', econ: -0.7, color: '#22c55e' },
+  { id: 'liberty', name: 'Liberty Union', ideology: 'right-market', econ: 0.8, color: '#38bdf8' },
+  { id: 'labor', name: 'Labor Front', ideology: 'left-labor', econ: -0.6, color: '#ef4444' },
+  { id: 'unity', name: 'National Unity', ideology: 'center-nationalist', econ: 0.3, color: '#f2b03d' },
+  { id: 'green', name: 'Green Future', ideology: 'environment', econ: -0.5, color: '#4ade80' },
 ];
+
+/* ------------------------------------------------------------------ */
+/* Bills — the legislative catalog. Once enacted, effects apply every    */
+/* tick until repealed or struck down by the courts. `ideology` is on    */
+/* the same -1..1 axis as a party's `econ` value, used for vote alignment.*/
+/* ------------------------------------------------------------------ */
+const BILLS = [
+  // Economy
+  { id: 'income_tax_relief', name: 'Income Tax Relief Act', cat: 'Economy', ideology: 0.6,
+    desc: 'Eases the political cost of high tax rates.', effects: { taxHappinessRelief: 6 } },
+  { id: 'minimum_wage_law', name: 'Minimum Wage Law', cat: 'Economy', ideology: -0.6,
+    desc: '+happiness; a small drag on GDP.', effects: { happinessFlat: 3, gdpMult: 0.98 } },
+  { id: 'banking_regulation', name: 'Banking Regulation Act', cat: 'Economy', ideology: -0.4,
+    desc: 'Reduces inflation growth; a small GDP drag.', effects: { inflationDamp: 0.3, gdpMult: 0.99 } },
+  { id: 'trade_liberalization', name: 'Trade Liberalization Act', cat: 'Economy', ideology: 0.5,
+    desc: '+GDP and +happiness from open markets.', effects: { gdpMult: 1.04, happinessFlat: 1 } },
+  // Infrastructure
+  { id: 'national_highways_act', name: 'National Highways Act', cat: 'Infrastructure', ideology: 0.1,
+    desc: '+GDP from better-connected infrastructure.', effects: { gdpMult: 1.03 } },
+  { id: 'broadband_initiative', name: 'Broadband Initiative', cat: 'Infrastructure', ideology: -0.2,
+    desc: '+happiness and +research nationwide.', effects: { happinessFlat: 1, researchFlat: 4 } },
+  // Healthcare
+  { id: 'universal_healthcare', name: 'Universal Healthcare Act', cat: 'Healthcare', ideology: -0.7,
+    desc: '+healthcare capacity and +happiness; higher upkeep.', effects: { healthcareMult: 1.3, happinessFlat: 3, upkeepMult: 1.05 } },
+  { id: 'private_healthcare_incentives', name: 'Private Healthcare Incentives', cat: 'Healthcare', ideology: 0.6,
+    desc: 'Saves public money; slightly lower healthcare capacity.', effects: { treasuryPerTick: 40, healthcareMult: 0.92 } },
+  // Education
+  { id: 'school_funding_boost', name: 'School Funding Boost', cat: 'Education', ideology: -0.3,
+    desc: '+education capacity nationwide.', effects: { educationMult: 1.2 } },
+  { id: 'student_loan_reform', name: 'Student Loan Reform', cat: 'Education', ideology: -0.4,
+    desc: '+happiness among young voters.', effects: { happinessFlat: 2 } },
+  // Housing
+  { id: 'affordable_housing_act', name: 'Affordable Housing Act', cat: 'Housing', ideology: -0.5,
+    desc: '+housing capacity nationwide.', effects: { popCapMult: 1.15 } },
+  { id: 'zoning_deregulation', name: 'Zoning Deregulation Act', cat: 'Housing', ideology: 0.4,
+    desc: '-20% construction time nationwide.', effects: { buildTimeMult: 0.8 } },
+  // Environment
+  { id: 'environmental_regulations', name: 'Environmental Regulations Act', cat: 'Environment', ideology: -0.8,
+    desc: '-pollution; a small drag on industrial output.', effects: { pollutionMult: 0.6, gdpMult: 0.98 } },
+  { id: 'carbon_pricing', name: 'Carbon Pricing Act', cat: 'Environment', ideology: -0.6,
+    desc: '-pollution and +treasury from carbon revenue; a GDP drag.', effects: { pollutionMult: 0.75, treasuryPerTick: 30, gdpMult: 0.99 } },
+  { id: 'conservation_act', name: 'National Conservation Act', cat: 'Environment', ideology: -0.5,
+    desc: '+happiness; a small GDP cost.', effects: { happinessFlat: 2, gdpMult: 0.99 } },
+  // Justice
+  { id: 'criminal_code_reform', name: 'Criminal Code Reform', cat: 'Justice', ideology: -0.2,
+    desc: '+crime reduction nationwide.', effects: { crimeReductionFlat: 3 } },
+  { id: 'police_funding_increase', name: 'Police Funding Increase', cat: 'Justice', ideology: 0.5,
+    desc: '+crime reduction; higher upkeep.', effects: { crimeReductionFlat: 4, upkeepMult: 1.03 } },
+  { id: 'civil_rights_act', name: 'Civil Rights Act', cat: 'Justice', ideology: -0.6,
+    desc: '+happiness nationwide.', effects: { happinessFlat: 3 } },
+  // Defence
+  { id: 'military_recruitment_drive', name: 'Military Recruitment Drive', cat: 'Defence', ideology: 0.6,
+    desc: '+defense rating; higher upkeep.', effects: { defenseFlat: 15, upkeepMult: 1.02 } },
+  { id: 'national_security_act', name: 'National Security Act', cat: 'Defence', ideology: 0.7,
+    desc: '+defense rating; a small happiness cost.', effects: { defenseFlat: 20, happinessFlat: -2 } },
+  // Immigration
+  { id: 'open_immigration_policy', name: 'Open Immigration Policy', cat: 'Immigration', ideology: -0.5,
+    desc: 'Faster population growth.', effects: { growthMult: 1.15 } },
+  { id: 'border_security_act', name: 'Border Security Act', cat: 'Immigration', ideology: 0.7,
+    desc: '+happiness among security-minded voters; slower growth.', effects: { happinessFlat: 2, growthMult: 0.92 } },
+  // Government
+  { id: 'anti_corruption_act', name: 'Anti-Corruption Act', cat: 'Government', ideology: -0.1,
+    desc: '-corruption growth nationwide.', effects: { corruptionGrowthMult: 0.6 } },
+  { id: 'transparency_act', name: 'Transparency in Government Act', cat: 'Government', ideology: -0.3,
+    desc: '-corruption growth; +happiness.', effects: { corruptionGrowthMult: 0.75, happinessFlat: 1 } },
+  { id: 'campaign_finance_reform', name: 'Campaign Finance Reform', cat: 'Government', ideology: -0.4,
+    desc: '-corruption growth nationwide.', effects: { corruptionGrowthMult: 0.7 } },
+];
+const BILLS_BY_ID = Object.fromEntries(BILLS.map(b => [b.id, b]));
+const BILL_CATEGORIES = ['Economy', 'Infrastructure', 'Healthcare', 'Education', 'Housing', 'Environment', 'Justice', 'Defence', 'Immigration', 'Government'];
+
+/* ------------------------------------------------------------------ */
+/* Cabinet portfolios — each maps to a concrete effectiveness bonus     */
+/* driven by the appointed minister's competence stat.                  */
+/* ------------------------------------------------------------------ */
+const PORTFOLIOS = [
+  { id: 'treasurer', name: 'Treasurer', icon: '💰', desc: 'Competence reduces debt interest and stabilizes inflation.' },
+  { id: 'foreign_affairs', name: 'Foreign Affairs', icon: '🌍', desc: 'Competence speeds up diplomatic relationship gains.' },
+  { id: 'education', name: 'Education Minister', icon: '🎓', desc: 'Competence boosts education capacity.' },
+  { id: 'health', name: 'Health Minister', icon: '⚕️', desc: 'Competence boosts healthcare capacity.' },
+  { id: 'defence', name: 'Defence Minister', icon: '🪖', desc: 'Competence boosts defense rating.' },
+  { id: 'transport', name: 'Transport Minister', icon: '🚄', desc: 'Competence boosts GDP from infrastructure.' },
+  { id: 'justice', name: 'Justice Minister', icon: '⚖️', desc: 'Competence reduces corruption growth.' },
+  { id: 'industry', name: 'Industry Minister', icon: '🏭', desc: 'Competence boosts industrial GDP.' },
+  { id: 'science', name: 'Science Minister', icon: '🔬', desc: 'Competence boosts research generation.' },
+  { id: 'environment', name: 'Environment Minister', icon: '🌳', desc: 'Competence reduces pollution.' },
+  { id: 'agriculture', name: 'Agriculture Minister', icon: '🌾', desc: 'Competence boosts farm output.' },
+  { id: 'energy', name: 'Energy Minister', icon: '⚡', desc: 'Competence boosts power output.' },
+  { id: 'housing', name: 'Housing Minister', icon: '🏘️', desc: 'Competence boosts housing capacity.' },
+];
+const PORTFOLIOS_BY_ID = Object.fromEntries(PORTFOLIOS.map(p => [p.id, p]));
+
+const LEGISLATOR_FIRST = ['Aiden', 'Mara', 'Tobias', 'Elena', 'Rurik', 'Sana', 'Cassius', 'Ingrid', 'Milo', 'Petra',
+  'Dorian', 'Freya', 'Callum', 'Nadia', 'Silas', 'Rosalind', 'Bram', 'Talia', 'Edric', 'Wren',
+  'Osric', 'Livia', 'Ansel', 'Corinne', 'Jarek', 'Thea', 'Baxter', 'Yolanda', 'Fenwick', 'Marisol'];
+const LEGISLATOR_LAST = ['Hollis', 'Vantor', 'Dresden', 'Marlowe', 'Okonkwo', 'Voss', 'Calloway', 'Reyes', 'Sinclair', 'Bracken',
+  'Thorne', 'Adair', 'Kwon', 'Whitlock', 'Marchetti', 'Solberg', 'Ashcombe', 'Devereux', 'Nakamura', 'Ferro'];
+const CONSTITUENCIES = ['North District', 'Riverside', 'Old Town', 'Harborview', 'Uplands', 'Southgate', 'Millbrook',
+  'Eastfield', 'Westmoor', 'Central', 'Lakeside', 'Greenway', 'Highcross', 'Fernvale', 'Ironside'];
 
 /* ------------------------------------------------------------------ */
 /* Random event pool                                                    */
@@ -364,5 +466,7 @@ return {
   BUILDINGS, BUILDINGS_BY_ID, TECHS, TECHS_BY_ID, TECH_CATEGORIES,
   GOVERNMENTS, GOVERNMENTS_BY_ID, PARTIES, EVENTS, TERRAIN,
   NATION_NAMES, NATION_COLORS,
+  BILLS, BILLS_BY_ID, BILL_CATEGORIES, PORTFOLIOS, PORTFOLIOS_BY_ID,
+  LEGISLATOR_FIRST, LEGISLATOR_LAST, CONSTITUENCIES,
 };
 })();

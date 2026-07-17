@@ -9,6 +9,7 @@ window.NexusSim = (() => {
 'use strict';
 const D = window.NexusData;
 const W = window.NexusWorld;
+const L = window.NexusLegislature;
 
 const MAP_W = 48, MAP_H = 32, AI_COUNT = 4, CITY_RADIUS = 6;
 const ELECTION_INTERVAL = 208; // ~4 years at 1 tick/week
@@ -40,7 +41,6 @@ function newGame(opts) {
     treasury: 25000, debt: 0,
     taxRate: { income: 0.20, corporate: 0.20, sales: 0.08 },
     funding: { health: 1, education: 1, environment: 1, military: 1 },
-    laws: { minWage: false, environmentalRegs: false, freeHealthcare: false, progressiveTax: false, immigrationOpen: true, censorship: false },
     stats: {
       population: 150, employed: 0, unemployed: 0, workforce: 0,
       gdp: 0, gdpHistory: [], inflation: 2.5, inflationHistory: [],
@@ -61,6 +61,7 @@ function newGame(opts) {
     score: 0,
   };
   normalizePartySupport(state);
+  L.init(state, opts.playerParty || 'unity');
   // seed starter buildings so the capital isn't completely empty
   for (const [type, dx, dy] of [['townhall', 0, 0], ['house', 1, 0], ['road', 0, 1]]) {
     placeBuilding(state, type, world.playerStart.x + dx, world.playerStart.y + dy, true);
@@ -158,7 +159,7 @@ function tick(state) {
   simulatePolitics(state);
   simulateResearch(state);
   simulateNations(state);
-  maybeElection(state);
+  L.tick(state);   // parliament: bill stages, votes, cabinet, courts, opposition, elections
   maybeEvent(state);
   pushHistory(state);
   state.score = computeScore(state);
@@ -175,13 +176,14 @@ function advanceConstruction(state) {
 /* recompute capacities from currently built buildings (cheap, called every tick) */
 function recompute(state) {
   const s = state.stats;
+  const law = L.activeEffects(state);
   let popCap = 0, jobs = 0, power = 0, water = 0, healthcare = 0, education = 0, research = 0, pollution = 0, defense = 0, crimeReduction = 0, gdpBase = 0, happinessFlat = 0;
-  const farmMult = techBonus(state, 'farmMult', 'mult');
-  const industrialMult = techBonus(state, 'industrialMult', 'mult');
-  const healthcareMult = techBonus(state, 'healthcareMult', 'mult') * (0.5 + state.funding.health * 0.5);
-  const powerMult = techBonus(state, 'powerMult', 'mult');
-  const eduMult = 0.5 + state.funding.education * 0.5;
-  const envMult = 0.6 + state.funding.environment * 0.4;
+  const farmMult = techBonus(state, 'farmMult', 'mult') * L.cabinetMultiplier(state, 'agriculture');
+  const industrialMult = techBonus(state, 'industrialMult', 'mult') * L.cabinetMultiplier(state, 'industry');
+  const healthcareMult = techBonus(state, 'healthcareMult', 'mult') * (0.5 + state.funding.health * 0.5) * law.healthcareMult * L.cabinetMultiplier(state, 'health');
+  const powerMult = techBonus(state, 'powerMult', 'mult') * L.cabinetMultiplier(state, 'energy');
+  const eduMult = (0.5 + state.funding.education * 0.5) * law.educationMult * L.cabinetMultiplier(state, 'education');
+  const envMult = (0.6 + state.funding.environment * 0.4) * (2 - L.cabinetMultiplier(state, 'environment'));
 
   for (const b of state.buildings) {
     if (!b.built) continue;
@@ -205,9 +207,19 @@ function recompute(state) {
     if (def.cat === 'industrial') gdp *= industrialMult;
     gdpBase += gdp;
   }
-  s.popCap = popCap; s.jobs = jobs; s.power = power; s.water = water;
-  s.healthcare = healthcare; s.education = education; s.pollution = pollution; s.defense = defense;
-  s.crimeReduction = crimeReduction; s.buildingHappiness = happinessFlat; s.gdpBase = gdpBase;
+  popCap *= law.popCapMult * L.cabinetMultiplier(state, 'housing');
+  pollution *= law.pollutionMult;
+  defense = (defense + law.defenseFlat) * L.cabinetMultiplier(state, 'defence');
+  crimeReduction += law.crimeReductionFlat + L.cabinetMultiplier(state, 'justice') * 3 - 3;
+  research += law.researchFlat + L.cabinetMultiplier(state, 'science') * 3 - 3;
+  gdpBase *= law.gdpMult;
+
+  s.popCap = Math.round(popCap); s.jobs = jobs; s.power = power; s.water = water;
+  s.healthcare = healthcare; s.education = education; s.pollution = pollution; s.defense = Math.round(defense);
+  s.crimeReduction = crimeReduction; s.buildingHappiness = happinessFlat + law.happinessFlat; s.gdpBase = gdpBase;
+  s.lawUpkeepMult = law.upkeepMult; s.lawTreasuryPerTick = law.treasuryPerTick;
+  s.lawTaxHappinessRelief = law.taxHappinessRelief; s.lawInflationDamp = law.inflationDamp;
+  s.lawGrowthMult = law.growthMult; s.lawCorruptionGrowthMult = law.corruptionGrowthMult;
 
   s.housingRatio = popCap > 0 ? clamp(popCap / Math.max(1, s.population), 0, 2) : (s.population > 0 ? 0 : 1);
   s.powerRatio = s.population > 0 ? clamp(power / Math.max(1, s.population * 0.7), 0, 2) : 1;
@@ -221,7 +233,7 @@ function simulateEconomy(state) {
   const gov = D.GOVERNMENTS_BY_ID[state.meta.government];
 
   // population growth toward capacity, modulated by happiness & healthcare
-  const growthMult = techBonus(state, 'growthMult', 'mult');
+  const growthMult = techBonus(state, 'growthMult', 'mult') * (s.lawGrowthMult || 1);
   const capRoom = s.popCap - s.population;
   const growthRate = clamp((s.happiness - 40) / 400, -0.01, 0.02) + (capRoom > 0 ? 0.006 : -0.01);
   s.population = Math.max(50, Math.round(s.population * (1 + growthRate * growthMult)));
@@ -250,17 +262,20 @@ function simulateEconomy(state) {
     if (b.type === 'military_base') u *= state.funding.military;
     upkeep += u;
   }
+  upkeep *= (s.lawUpkeepMult || 1);
   const militaryUpkeep = (state.militaryUnits.army + state.militaryUnits.navy * 2 + state.militaryUnits.airforce * 2) * 12 * state.funding.military;
-  const debtInterest = state.debt * 0.0006; // ~3.2% annualized at 52 ticks/year
-  const net = taxRevenue - upkeep - militaryUpkeep - debtInterest;
+  const treasurerMult = L.cabinetMultiplier(state, 'treasurer'); // competent treasurer = cheaper debt service
+  const debtInterest = state.debt * 0.0006 * (2 - treasurerMult); // ~3.2% annualized at 52 ticks/year, baseline
+  const lawIncome = s.lawTreasuryPerTick || 0;
+  const net = taxRevenue - upkeep - militaryUpkeep - debtInterest + lawIncome;
   state.treasury += net;
   if (state.treasury < 0) { state.debt += -state.treasury; state.treasury = 0; }
   else if (state.debt > 0) { const pay = Math.min(state.debt, state.treasury * 0.1); state.debt -= pay; state.treasury -= pay; }
-  s.lastTaxRevenue = Math.round(taxRevenue); s.lastUpkeep = Math.round(upkeep + militaryUpkeep + debtInterest); s.netIncome = Math.round(net);
+  s.lastTaxRevenue = Math.round(taxRevenue + lawIncome); s.lastUpkeep = Math.round(upkeep + militaryUpkeep + debtInterest); s.netIncome = Math.round(net);
 
   // inflation: drifts based on deficit spending & debt load relative to GDP
   const debtPressure = s.gdp > 0 ? state.debt / (s.gdp * 10) : 0;
-  const inflationTarget = 2 + clamp(debtPressure * 6, 0, 20) + clamp(-net / Math.max(1, s.gdp) * 20, -2, 8);
+  const inflationTarget = Math.max(0, 2 + clamp(debtPressure * 6, 0, 20) + clamp(-net / Math.max(1, s.gdp) * 20, -2, 8) - (s.lawInflationDamp || 0) - (treasurerMult - 1) * 4);
   s.inflation = clamp(lerp(s.inflation, inflationTarget, 0.08), 0, 30);
 
   // happiness baseline from services, tax burden, pollution, corruption, government type
@@ -272,15 +287,15 @@ function simulateEconomy(state) {
     + (s.healthcareRatio - 1) * 10 + (s.educationRatio - 1) * 6
     - s.pollution * 0.4
     - s.corruption * 0.25
-    - Math.max(0, taxBurden - 25) * 0.5
+    - Math.max(0, taxBurden - 25 - (s.lawTaxHappinessRelief || 0)) * 0.5
     + s.buildingHappiness
-    + gov.happinessBaseline
-    + (state.laws.minWage ? 3 : 0) + (state.laws.freeHealthcare ? 3 : 0) + (state.laws.environmentalRegs ? 2 : 0);
+    + gov.happinessBaseline;
   s.happiness = clamp(lerp(s.happiness, baseline, 0.15), 0, 100);
 
-  // corruption drifts up slowly, resisted by police + big_data tech
+  // corruption drifts up slowly, resisted by police, the Justice minister + big_data tech
   const corruptionResist = s.crimeReduction * 0.15 + (techUnlocked(state, 'big_data') ? 3 : 0);
-  s.corruption = clamp(s.corruption + gov.corruptionGrowth * 0.12 - corruptionResist * 0.05, 0, 100);
+  const corruptionGrowth = gov.corruptionGrowth * (s.lawCorruptionGrowthMult || 1);
+  s.corruption = clamp(s.corruption + corruptionGrowth * 0.12 - corruptionResist * 0.05, 0, 100);
 }
 
 function simulatePolitics(state) {
@@ -290,8 +305,9 @@ function simulatePolitics(state) {
   s.prevGdp = s.gdp;
 
   // party support drifts toward a function of approval + a little randomness-free drift toward ideology fit
+  const greenLawActive = state.legislature.activeLawIds.includes('environmental_regulations') || state.legislature.activeLawIds.includes('carbon_pricing');
   for (const p of state.parties) {
-    const drift = (state.laws.environmentalRegs && p.id === 'green') ? 1 : 0;
+    const drift = (greenLawActive && p.id === 'green') ? 1 : 0;
     p.support = clamp(p.support + (Math.random() < 0.5 ? -1 : 1) * 0.3 + drift * 0.4, 2, 60);
   }
   normalizePartySupport(state);
@@ -316,6 +332,7 @@ function simulateResearch(state) {
 }
 
 function simulateNations(state) {
+  const foreignMult = L.cabinetMultiplier(state, 'foreign_affairs'); // competent minister: relations improve faster
   for (const n of state.nations) {
     const drift = (Math.random() - 0.47) * 0.03;
     n.gdp = Math.max(500, n.gdp * (1 + drift));
@@ -323,26 +340,8 @@ function simulateNations(state) {
     n.approval = clamp(n.approval + (Math.random() - 0.5) * 3, 10, 95);
     // relations slowly decay toward neutral unless treaties are active
     const pull = n.tradeAgreement || n.alliance ? 52 : 50;
-    n.relation = clamp(lerp(n.relation, pull, 0.03), 0, 100);
+    n.relation = clamp(lerp(n.relation, pull, 0.03 * foreignMult), 0, 100);
     if (n.tradeAgreement) state.stats.gdp += Math.round(n.gdp * 0.002); // small mutual trade bonus, applied post-hoc
-  }
-}
-
-function maybeElection(state) {
-  const gov = D.GOVERNMENTS_BY_ID[state.meta.government];
-  if (!gov.elections) return;
-  if (state.meta.tick < state.nextElectionTick) return;
-  state.nextElectionTick = state.meta.tick + ELECTION_INTERVAL;
-  const chance = clamp(state.stats.approval / 100, 0.05, 0.95);
-  const winner = state.parties.slice().sort((a, b) => b.support - a.support)[0];
-  const winnerName = (D.PARTIES.find(p => p.id === winner.id) || {}).name || winner.id;
-  if (Math.random() < chance) {
-    state.stats.approval = clamp(state.stats.approval + 8, 0, 100);
-    notify(state, `Election held — you have been re-elected! (${winnerName} leads the largest opposition bloc)`, 'election');
-  } else {
-    state.stats.approval = 50;
-    state.stats.corruption = Math.max(0, state.stats.corruption - 10);
-    notify(state, `Election held — a coalition led by ${winnerName} takes parliament. Your mandate is renewed with fresh approval.`, 'election');
   }
 }
 
@@ -399,7 +398,6 @@ function startResearch(state, techId) {
 }
 function setTaxRate(state, kind, value) { state.taxRate[kind] = clamp(value, 0, 0.5); }
 function setFunding(state, kind, value) { state.funding[kind] = clamp(value, 0, 1.5); }
-function toggleLaw(state, lawId) { state.laws[lawId] = !state.laws[lawId]; }
 function trainUnit(state, kind) {
   const hasBase = state.buildings.some(b => b.built && b.type === 'military_base');
   if (!hasBase) return { ok: false, reason: 'Build a Military Base first.' };
@@ -433,7 +431,7 @@ function migrate(saved) {
 return {
   MAP_W, MAP_H, AI_COUNT, ELECTION_INTERVAL,
   newGame, tick, canPlaceBuilding, placeBuilding, bulldozeBuilding,
-  techAvailable, techUnlocked, startResearch, setTaxRate, setFunding, toggleLaw,
+  techAvailable, techUnlocked, startResearch, setTaxRate, setFunding,
   trainUnit, resolveEvent, diplomacyAction, migrate, computeScore,
 };
 })();

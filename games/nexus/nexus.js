@@ -12,10 +12,8 @@ const SAVES_KEY = 'gamingx.nexus.saves';
 const HI_KEY = 'gamingx.hi.nexus';
 
 let state = null;
-let tickTimer = null;
 let rafId = 0;
 let dirty = false;
-let autosaveCounter = 0;
 
 /* ------------------------------------------------------------------ */
 /* screens                                                              */
@@ -47,23 +45,23 @@ function reportScore(score) {
 }
 
 /* ------------------------------------------------------------------ */
-/* game loop                                                            */
+/* game loop — turn-based: the player advances the week explicitly     */
 /* ------------------------------------------------------------------ */
-const SPEED_MS = { 1: 900, 2: 420, 3: 160 };
-function setSpeed(speed) {
-  state.meta.speed = speed;
-  document.querySelectorAll('.nx-speed-btn').forEach(b => b.classList.toggle('on', +b.dataset.speed === speed));
-  clearInterval(tickTimer);
-  if (speed > 0) tickTimer = setInterval(doTick, SPEED_MS[speed]);
+function canEndTurn() { return state && !state.events.pending; }
+function updateEndTurnButton() {
+  const btn = $('btn-end-turn');
+  const pending = state && state.events.pending;
+  btn.disabled = !canEndTurn();
+  btn.textContent = pending ? 'RESOLVE EVENT FIRST' : 'END TURN ▸';
 }
-function doTick() {
-  if (!state || state.events.pending) return;
+function endTurn() {
+  if (!canEndTurn()) return;
   S.tick(state);
   dirty = true;
-  autosaveCounter++;
-  if (autosaveCounter >= 8) { autosaveCounter = 0; saveGame(true); }
+  saveGame(true); // turn-based play autosaves every turn — no data lost on close
   reportScore(state.score);
   UI.refresh();
+  updateEndTurnButton();
 }
 function renderLoop() {
   rafId = requestAnimationFrame(renderLoop);
@@ -71,18 +69,17 @@ function renderLoop() {
 }
 
 function startGameWith(newState) {
-  clearInterval(tickTimer);
   state = newState;
   if (!state.saveId) state.saveId = 'n' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
-  autosaveCounter = 0;
   showScreen('screen-game');
   UI.init(state, onChange);
-  setSpeed(state.meta.speed || 1);
+  updateEndTurnButton();
   if (!rafId) renderLoop();
 }
 function onChange(fromAction) {
   dirty = true;
   UI.refresh();
+  updateEndTurnButton();
   if (fromAction) saveGame(true);
 }
 
@@ -100,6 +97,7 @@ $('btn-saves-back').addEventListener('click', () => showScreen('screen-menu'));
 /* setup screen                                                         */
 /* ------------------------------------------------------------------ */
 let setupGov = 'democracy';
+let setupParty = 'unity';
 function populateSetup() {
   $('setup-name').value = '';
   $('setup-seed').value = '';
@@ -112,12 +110,21 @@ function populateSetup() {
     el.addEventListener('click', () => { setupGov = g.id; wrap.querySelectorAll('.nx-gov-card').forEach(c => c.classList.remove('on')); el.classList.add('on'); });
     wrap.appendChild(el);
   }
+  const pwrap = $('setup-parties');
+  pwrap.innerHTML = '';
+  for (const p of D.PARTIES) {
+    const el = document.createElement('div');
+    el.className = 'nx-gov-card' + (p.id === setupParty ? ' on' : '');
+    el.innerHTML = `<b style="color:${p.color}">${p.name}</b><span>${p.ideology.replace('-', ' / ')}</span>`;
+    el.addEventListener('click', () => { setupParty = p.id; pwrap.querySelectorAll('.nx-gov-card').forEach(c => c.classList.remove('on')); el.classList.add('on'); });
+    pwrap.appendChild(el);
+  }
 }
 $('btn-random-seed').addEventListener('click', () => { $('setup-seed').value = Math.random().toString(36).slice(2, 10); });
 $('btn-found').addEventListener('click', () => {
   const name = $('setup-name').value.trim() || 'Valtoria';
   const seed = $('setup-seed').value.trim() || Math.random().toString(36).slice(2, 10);
-  const newState = S.newGame({ nationName: name, seed, government: setupGov });
+  const newState = S.newGame({ nationName: name, seed, government: setupGov, playerParty: setupParty });
   startGameWith(newState);
 });
 
@@ -148,12 +155,9 @@ function escapeHtml(s) { return String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;
 /* ------------------------------------------------------------------ */
 /* in-game top bar controls                                             */
 /* ------------------------------------------------------------------ */
-document.querySelectorAll('.nx-speed-btn').forEach(b => b.addEventListener('click', () => setSpeed(+b.dataset.speed)));
+$('btn-end-turn').addEventListener('click', endTurn);
 $('btn-cancel-build').addEventListener('click', () => UI.cancelBuild());
-$('btn-menu').addEventListener('click', () => {
-  clearInterval(tickTimer);
-  showPauseModal();
-});
+$('btn-menu').addEventListener('click', () => showPauseModal());
 function showPauseModal() {
   const box = $('modal-box');
   box.innerHTML = `<h2>PAUSED</h2>
@@ -162,17 +166,16 @@ function showPauseModal() {
       <button class="nx-btn" data-act="save">💾 SAVE NATION</button>
       <button class="nx-btn" data-act="exit">🚪 SAVE &amp; EXIT TO MENU</button>
     </div>`;
-  box.querySelector('[data-act="resume"]').addEventListener('click', () => { $('modal').classList.add('hidden'); setSpeed(state.meta.speed || 1); });
+  box.querySelector('[data-act="resume"]').addEventListener('click', () => { $('modal').classList.add('hidden'); });
   box.querySelector('[data-act="save"]').addEventListener('click', () => saveGame());
   box.querySelector('[data-act="exit"]').addEventListener('click', () => {
     saveGame(true);
-    clearInterval(tickTimer);
     $('modal').classList.add('hidden');
     showScreen('screen-menu');
   });
   $('modal').classList.remove('hidden');
 }
-$('modal').addEventListener('click', e => { if (e.target === $('modal')) { $('modal').classList.add('hidden'); setSpeed(state.meta.speed || 1); } });
+$('modal').addEventListener('click', e => { if (e.target === $('modal')) $('modal').classList.add('hidden'); });
 
 addEventListener('beforeunload', () => { if (state && dirty) saveGame(true); });
 

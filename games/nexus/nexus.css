@@ -93,9 +93,18 @@ input,select,textarea{font-family:inherit;color:inherit}
 }
 .nx-topstats .chip small{display:block;color:var(--muted);font-size:.58rem;font-weight:700;letter-spacing:1px}
 .nx-topstats .chip.warn{border-color:rgba(239,68,68,.4);color:#f87171}
-.nx-speed{display:flex;gap:4px;background:var(--panel2);border-radius:9px;padding:4px}
-.nx-speed-btn{padding:6px 10px;border-radius:6px;font-size:.78rem;color:var(--muted);font-weight:800}
-.nx-speed-btn.on{background:linear-gradient(90deg,var(--accent),var(--accent2));color:#08101c}
+.nx-gov-status{
+  font-size:.68rem;font-weight:800;letter-spacing:1px;padding:6px 12px;border-radius:8px;
+  background:rgba(74,222,128,.14);color:var(--green);border:1px solid rgba(74,222,128,.35);
+}
+.nx-gov-status.opposition{background:rgba(239,68,68,.14);color:#f87171;border-color:rgba(239,68,68,.35)}
+.nx-endturn{
+  padding:10px 20px;border-radius:10px;font-weight:900;font-size:.85rem;letter-spacing:1px;
+  background:linear-gradient(90deg,var(--accent),var(--accent2));color:#08101c;
+  transition:transform .1s;
+}
+.nx-endturn:hover{transform:translateY(-1px)}
+.nx-endturn:disabled{opacity:.4;cursor:not-allowed;transform:none}
 
 .nx-main{flex:1;display:flex;min-height:0}
 .nx-map-wrap{flex:1;position:relative;background:#05070d;min-width:0}
@@ -228,6 +237,49 @@ input,select,textarea{font-family:inherit;color:inherit}
 }
 .nx-event-choices button:hover{border-color:var(--accent);color:var(--accent)}
 .nx-modal-box .nx-menu-buttons{margin-top:6px}
+
+/* Parliament & Archive */
+.nx-seat-chart{height:14px;border-radius:7px;background:#0d1120;overflow:hidden;display:flex;margin-bottom:10px}
+.nx-seat-seg{height:100%}
+.nx-gov-banner{
+  padding:10px 12px;border-radius:10px;margin-bottom:10px;font-size:.78rem;font-weight:700;
+  background:rgba(74,222,128,.1);border:1px solid rgba(74,222,128,.3);color:var(--text);
+}
+.nx-gov-banner.opposition{background:rgba(239,68,68,.1);border-color:rgba(239,68,68,.3)}
+.nx-cabinet-card{
+  display:flex;align-items:center;gap:9px;padding:8px 10px;background:#0d1120;border-radius:9px;margin-bottom:6px;
+}
+.nx-cabinet-card .role{flex:1;min-width:0}
+.nx-cabinet-card .role b{display:block;font-size:.76rem}
+.nx-cabinet-card .role span{color:var(--muted);font-size:.64rem}
+.nx-cabinet-card button{font-size:.64rem;font-weight:800;color:var(--accent);background:var(--panel2);padding:5px 9px;border-radius:6px;flex-shrink:0}
+.nx-bill-card{background:var(--panel2);border-radius:11px;padding:11px;margin-bottom:9px;border-left:3px solid var(--accent)}
+.nx-bill-card.failed{border-left-color:#f87171;opacity:.7}
+.nx-bill-card.passed{border-left-color:var(--green)}
+.nx-bill-card.struck{border-left-color:#a855f7;opacity:.7}
+.nx-bill-card .top{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}
+.nx-bill-card .top b{font-size:.82rem}
+.nx-bill-card .stage{font-size:.62rem;font-weight:800;color:var(--accent);letter-spacing:.5px}
+.nx-bill-card .ds{color:var(--muted);font-size:.7rem;line-height:1.4;margin-bottom:6px}
+.nx-bill-card .prog{height:5px;border-radius:3px;background:#08090f;overflow:hidden;margin-bottom:6px}
+.nx-bill-card .prog i{display:block;height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2))}
+.nx-bill-card .meta{display:flex;justify-content:space-between;font-size:.64rem;color:var(--muted)}
+.nx-legislator-row{display:flex;align-items:center;gap:8px;font-size:.72rem;padding:5px 0;border-bottom:1px solid rgba(255,255,255,.05)}
+.nx-legislator-row .dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.nx-legislator-row .nm{flex:1}
+.nx-legislator-row .vote{font-weight:800;font-size:.64rem}
+.nx-legislator-row .vote.yes{color:var(--green)}
+.nx-legislator-row .vote.no{color:#f87171}
+.nx-legislator-row .vote.abstain{color:var(--muted)}
+.nx-archive-row{padding:8px 10px;background:#0d1120;border-radius:8px;margin-bottom:6px;font-size:.72rem;color:var(--muted)}
+.nx-archive-row b{color:var(--text)}
+.nx-archive-tabs{display:flex;gap:5px;margin-bottom:10px;flex-wrap:wrap}
+.nx-archive-tabs button{padding:6px 10px;border-radius:7px;background:var(--panel2);font-size:.66rem;font-weight:800;color:var(--muted)}
+.nx-archive-tabs button.on{background:linear-gradient(90deg,var(--accent),var(--accent2));color:#08101c}
+.nx-locked-note{
+  font-size:.72rem;color:var(--muted);text-align:center;padding:14px;background:rgba(239,68,68,.06);
+  border:1px dashed rgba(239,68,68,.25);border-radius:10px;margin-bottom:12px;
+}
 
 @media (max-width:900px){
   .nx-dash{width:280px}
