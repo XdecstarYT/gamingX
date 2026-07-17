@@ -223,6 +223,19 @@ function renderOverview(body) {
   g2.innerHTML += `<p style="color:var(--muted);font-size:.8rem"><b style="color:var(--text)">${esc(def.motto)}</b> — ${esc(def.desc)}</p>`;
   body.appendChild(g2);
 
+  if (nation.milestonesClaimed.length) {
+    const gm = group(`MILESTONES (${nation.milestonesClaimed.length}/${D.MILESTONES.length})`);
+    gm.innerHTML += nation.milestonesClaimed.map(name => {
+      const ms = D.MILESTONES.find(x => x.name === name);
+      return `<div style="font-size:.78rem;padding:5px 0"><b style="color:var(--accent)">${esc(ms.name)}</b><br><span style="color:var(--muted);font-size:.7rem">${esc(ms.desc)}</span></div>`;
+    }).join('');
+    body.appendChild(gm);
+  } else {
+    const gm = group('MILESTONES');
+    gm.innerHTML += `<p style="color:var(--muted);font-size:.76rem">Reach ${D.MILESTONES[0].provinces} provinces to become a ${D.MILESTONES[0].name} and earn your first permanent bonus.</p>`;
+    body.appendChild(gm);
+  }
+
   const g3 = group('RECENT NEWS');
   const feed = document.createElement('div'); feed.className = 'im-feed';
   feed.innerHTML = state.notifications.slice(-8).reverse().map(n => `<div class="im-feed-item ${n.kind}">${esc(n.text)}</div>`).join('') || '<div class="im-feed-item">All quiet for now.</div>';
@@ -258,6 +271,13 @@ function renderProvince(body) {
     ? garrisonRows.map(([uid, c]) => `<div style="display:flex;justify-content:space-between;font-size:.76rem;padding:4px 0"><span>${D.UNITS_BY_ID[uid].icon} ${D.UNITS_BY_ID[uid].name}</span><b>${c}</b></div>`).join('')
     : '<p style="color:var(--muted);font-size:.76rem">No garrison.</p>';
   if (ps.improvement) g1.innerHTML += `<p style="font-size:.74rem;color:var(--accent);margin-top:8px">${D.IMPROVEMENTS_BY_ID[ps.improvement].icon} ${D.IMPROVEMENTS_BY_ID[ps.improvement].name} built here</p>`;
+  if (ps.owner) {
+    const unrestColor = ps.unrest >= 70 ? '#f87171' : ps.unrest >= 40 ? '#f2b03d' : '#22c55e';
+    g1.innerHTML += `<div style="margin-top:9px">
+      <div style="display:flex;justify-content:space-between;font-size:.68rem;color:var(--muted);margin-bottom:3px"><span>UNREST</span><span style="color:${unrestColor};font-weight:800">${Math.round(ps.unrest)}${ps.unrest >= 70 ? ' ⚠ revolt risk' : ''}</span></div>
+      <div style="height:5px;border-radius:3px;background:#0c0708;overflow:hidden"><i style="display:block;height:100%;width:${ps.unrest}%;background:${unrestColor}"></i></div>
+    </div>`;
+  }
   body.appendChild(g1);
 
   if (isMine) {

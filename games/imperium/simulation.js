@@ -42,6 +42,7 @@ function newGame(opts) {
     owner: world.owners[i],
     garrison: world.owners[i] ? { militia: 6 } : {},
     improvement: null, improvementBuild: null, buildQueue: [],
+    unrest: 0,
   }));
 
   const nations = {};
@@ -50,7 +51,7 @@ function newGame(opts) {
     nations[nid] = {
       id: nid, isPlayer: nid === playerNation, alive: true,
       gold: 800, manpower: 500, researchProgress: 0,
-      techUnlocked: [], researching: null,
+      techUnlocked: [], researching: null, milestonesClaimed: [],
       personality: nid === playerNation ? null : PERSONALITIES[Math.floor(personalityRng() * PERSONALITIES.length)],
     };
   }
@@ -82,6 +83,24 @@ function techMult(nation, key) {
   for (const tid of nation.techUnlocked) { const t = D.TECHS_BY_ID[tid]; if (t.bonus && t.bonus[key] != null) m *= t.bonus[key]; }
   return m;
 }
+function milestoneMult(nation, key) {
+  let m = 1;
+  for (const name of nation.milestonesClaimed) {
+    const ms = D.MILESTONES.find(x => x.name === name);
+    if (ms && ms.bonus[key] != null) m *= ms.bonus[key];
+  }
+  return m;
+}
+function checkMilestones(state, nationId) {
+  const nation = state.nations[nationId];
+  const count = ownedProvinceIds(state, nationId).length;
+  for (const ms of D.MILESTONES) {
+    if (count >= ms.provinces && !nation.milestonesClaimed.includes(ms.name)) {
+      nation.milestonesClaimed.push(ms.name);
+      notify(state, `${D.NATIONS_BY_ID[nationId].name} has become a ${ms.name}! ${ms.desc}`, 'tech');
+    }
+  }
+}
 function trainTimeMult(state, nationId, provinceId) {
   const nation = state.nations[nationId];
   const n = D.NATIONS_BY_ID[nationId];
@@ -90,15 +109,15 @@ function trainTimeMult(state, nationId, provinceId) {
   if (ps.improvement === 'barracks') m *= D.IMPROVEMENTS_BY_ID.barracks.bonus.trainTimeMult;
   return m;
 }
-function attackPowerMult(nationId) {
-  return D.NATIONS_BY_ID[nationId].trait.atk || 1;
+function attackPowerMult(state, nationId) {
+  return (D.NATIONS_BY_ID[nationId].trait.atk || 1) * milestoneMult(state.nations[nationId], 'atkMult');
 }
 function defensePowerMult(state, nationId, provinceId) {
   const prov = state.world.provinces[provinceId];
   let m = D.TERRAIN[prov.terrain].defMult;
   const ps = state.provinces[provinceId];
   if (ps.improvement) { const imp = D.IMPROVEMENTS_BY_ID[ps.improvement]; if (imp.bonus.defMult) m *= imp.bonus.defMult; }
-  if (nationId) { const n = D.NATIONS_BY_ID[nationId]; m *= (n.trait.def || 1) * techMult(state.nations[nationId], 'defMult'); }
+  if (nationId) { const n = D.NATIONS_BY_ID[nationId]; m *= (n.trait.def || 1) * techMult(state.nations[nationId], 'defMult') * milestoneMult(state.nations[nationId], 'defMult'); }
   return m;
 }
 function sumStat(units, statKey) {
@@ -123,8 +142,8 @@ function computeIncome(state, nationId) {
     }
     gold += g; manpower += m; research += r;
   }
-  gold *= (nationDef.trait.gold || 1) * techMult(nation, 'goldMult');
-  manpower *= (nationDef.trait.manpower || 1) * techMult(nation, 'manpowerMult');
+  gold *= (nationDef.trait.gold || 1) * techMult(nation, 'goldMult') * milestoneMult(nation, 'goldMult');
+  manpower *= (nationDef.trait.manpower || 1) * techMult(nation, 'manpowerMult') * milestoneMult(nation, 'manpowerMult');
   research *= (nationDef.trait.research || 1);
   return { gold, manpower, research };
 }
@@ -205,16 +224,18 @@ function attack(state, sourceId, targetId, fraction) {
   }
   if (!Object.keys(sent).length) return { ok: false, reason: 'No units available to send.' };
   for (const [uid, n] of Object.entries(sent)) { src.garrison[uid] -= n; if (src.garrison[uid] <= 0) delete src.garrison[uid]; }
-  const atkMult = attackPowerMult(src.owner);
+  const atkMult = attackPowerMult(state, src.owner);
   const defMult = defensePowerMult(state, tgt.owner, targetId);
   const result = resolveBattle(sent, tgt.garrison, atkMult, defMult);
   const attackerName = D.NATIONS_BY_ID[src.owner].name;
   const defenderName = tgt.owner ? D.NATIONS_BY_ID[tgt.owner].name : 'unclaimed territory';
   const targetName = state.world.provinces[targetId].name;
   if (result.attackerWins) {
+    const wasOwned = !!tgt.owner;
     tgt.owner = src.owner;
     tgt.garrison = result.survivors;
     tgt.improvement = null; tgt.improvementBuild = null; tgt.buildQueue = [];
+    tgt.unrest = wasOwned ? 55 : 30;
     notify(state, `${attackerName} captured ${targetName} from ${defenderName}!`, 'battle');
   } else {
     tgt.garrison = result.defenderRemaining;
@@ -274,7 +295,7 @@ function aiTurn(state, nationId) {
     }
     if (candidates.length) {
       const [sid, tid] = candidates[Math.floor(Math.random() * candidates.length)];
-      const atkPow = sumStat(state.provinces[sid].garrison, 'attack') * attackPowerMult(nationId);
+      const atkPow = sumStat(state.provinces[sid].garrison, 'attack') * attackPowerMult(state, nationId);
       const defPow = sumStat(state.provinces[tid].garrison, 'defense') * defensePowerMult(state, state.provinces[tid].owner, tid);
       if (defPow === 0 || atkPow > defPow * riskThreshold) attack(state, sid, tid, personality === 'aggressive' ? 0.9 : 0.6);
     }
@@ -320,7 +341,8 @@ function tick(state) {
   if (state.gameOver) return;
   state.meta.tick++;
 
-  for (const ps of state.provinces) {
+  for (let i = 0; i < state.provinces.length; i++) {
+    const ps = state.provinces[i];
     if (!ps.owner) continue;
     if (ps.improvementBuild) {
       ps.improvementBuild.ticksLeft--;
@@ -330,6 +352,19 @@ function tick(state) {
       const item = ps.buildQueue[0];
       item.ticksLeft--;
       if (item.ticksLeft <= 0) { ps.garrison[item.unitId] = (ps.garrison[item.unitId] || 0) + 1; ps.buildQueue.shift(); }
+    }
+    // occupation unrest: freshly conquered provinces settle down over time unless
+    // left completely undefended, in which case resentment keeps building
+    const nation = state.nations[ps.owner];
+    const totalGarrison = Object.values(ps.garrison).reduce((a, b) => a + b, 0);
+    const decay = 3 * techMult(nation, 'unrestDecayMult');
+    const growth = totalGarrison === 0 ? 6 : 0;
+    ps.unrest = clamp(ps.unrest - decay + growth, 0, 100);
+    if (ps.unrest >= 70 && Math.random() < (ps.unrest - 70) * 0.015) {
+      const provName = state.world.provinces[i].name;
+      const lostNation = D.NATIONS_BY_ID[ps.owner].name;
+      ps.owner = null; ps.garrison = {}; ps.improvement = null; ps.improvementBuild = null; ps.buildQueue = []; ps.unrest = 0;
+      notify(state, `${provName} has risen up and thrown off ${lostNation}'s rule!`, 'battle');
     }
   }
 
@@ -348,6 +383,7 @@ function tick(state) {
         nation.researching = null; nation.researchProgress = 0;
       }
     }
+    checkMilestones(state, nid);
   }
 
   for (const nid of state.nationOrder) { if (nid !== state.playerNation) aiTurn(state, nid); }

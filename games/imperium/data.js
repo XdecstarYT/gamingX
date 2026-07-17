@@ -67,6 +67,7 @@ const TECHS = [
   { id: 'banking', name: 'Banking', cost: 260, cat: 'economy', prereq: ['trade_routes'], desc: '+20% gold income nationwide.', bonus: { goldMult: 1.2 } },
   { id: 'conscription', name: 'Conscription', cost: 260, cat: 'economy', prereq: ['agriculture'], desc: '+20% manpower income nationwide.', bonus: { manpowerMult: 1.2 } },
   { id: 'logistics', name: 'Logistics', cost: 300, cat: 'military', desc: '-15% unit upkeep nationwide.', bonus: { upkeepMult: 0.85 } },
+  { id: 'governance', name: 'Governance', cost: 180, cat: 'economy', desc: 'Conquered provinces settle down twice as fast.', bonus: { unrestDecayMult: 2 } },
 ];
 const TECHS_BY_ID = Object.fromEntries(TECHS.map(t => [t.id, t]));
 
@@ -96,6 +97,17 @@ const IMPROVEMENTS = [
 const IMPROVEMENTS_BY_ID = Object.fromEntries(IMPROVEMENTS.map(i => [i.id, i]));
 
 /* ------------------------------------------------------------------ */
+/* Growth milestones — a one-time permanent bonus a nation claims the   */
+/* first time its province count reaches the threshold. Stacks.        */
+/* ------------------------------------------------------------------ */
+const MILESTONES = [
+  { provinces: 8, name: 'Regional Power', bonus: { goldMult: 1.08 }, desc: '+8% gold income, permanently.' },
+  { provinces: 16, name: 'Great Power', bonus: { atkMult: 1.08 }, desc: '+8% attack power, permanently.' },
+  { provinces: 24, name: 'Continental Hegemon', bonus: { defMult: 1.1 }, desc: '+10% defense power, permanently.' },
+  { provinces: 32, name: 'World Power', bonus: { goldMult: 1.1, manpowerMult: 1.1 }, desc: '+10% gold and manpower, permanently.' },
+];
+
+/* ------------------------------------------------------------------ */
 /* Name pools for procedurally generated provinces                     */
 /* ------------------------------------------------------------------ */
 const PROVINCE_NAMES = [
@@ -121,7 +133,7 @@ const FLAVOR_EVENTS = [
 
 return {
   NATIONS, NATIONS_BY_ID, UNITS, UNITS_BY_ID, TECHS, TECHS_BY_ID,
-  TERRAIN, TERRAIN_IDS, IMPROVEMENTS, IMPROVEMENTS_BY_ID,
+  TERRAIN, TERRAIN_IDS, IMPROVEMENTS, IMPROVEMENTS_BY_ID, MILESTONES,
   PROVINCE_NAMES, FLAVOR_EVENTS,
 };
 })();
