@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Imperium: World Conquest — GamingX</title>
+<link rel="stylesheet" href="imperium.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚔️</text></svg>">
+</head>
+<body>
+
+<!-- ============== MAIN MENU ============== -->
+<div id="screen-menu" class="im-screen active">
+  <div class="im-menu-box">
+    <a class="im-back" href="../../index.html">← GamingX Hub</a>
+    <h1 class="im-logo">IMPERIUM<span>WORLD CONQUEST</span></h1>
+    <p class="im-tagline">Pick a nation. Build an economy. Raise an army. Conquer the map.</p>
+    <div class="im-menu-buttons">
+      <button class="im-btn im-btn-primary" id="btn-new-game">⚔️ START A CONQUEST</button>
+      <button class="im-btn" id="btn-continue">📂 MY CAMPAIGNS</button>
+      <button class="im-btn" id="btn-howto">📖 HOW TO PLAY</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============== HOW TO PLAY ============== -->
+<div id="screen-howto" class="im-screen">
+  <div class="im-menu-box im-wide">
+    <h2 class="im-screen-title">HOW TO PLAY</h2>
+    <div class="im-howto-grid">
+      <div><h3>🗺️ Provinces</h3><p>The map is a web of provinces. Click one you own to manage it, click an adjacent one to consider attacking it.</p></div>
+      <div><h3>💰 Economy</h3><p>Every province generates gold, manpower and research each tick. Improvements and technology multiply your output.</p></div>
+      <div><h3>⚔️ Combat</h3><p>Send a share of a province's garrison to attack an adjacent province. Bigger, better-teched armies win — but losses are never free.</p></div>
+      <div><h3>🔬 Technology</h3><p>Spend research points to unlock stronger units and nationwide bonuses.</p></div>
+      <div><h3>🤖 Rivals</h3><p>AI nations build, research and attack on their own — aggressive, economic or balanced. They will come for you too.</p></div>
+      <div><h3>🏆 Victory</h3><p>Conquer every province, or simply outlast every rival nation. Lose your last province and it's game over.</p></div>
+    </div>
+    <div class="im-menu-buttons"><button class="im-btn" id="btn-howto-back">← BACK</button></div>
+  </div>
+</div>
+
+<!-- ============== NEW GAME SETUP ============== -->
+<div id="screen-setup" class="im-screen">
+  <div class="im-menu-box im-wide">
+    <h2 class="im-screen-title">CHOOSE YOUR NATION</h2>
+    <div class="im-field">
+      <label>MAP SEED</label>
+      <div class="im-seed-row">
+        <input type="text" id="setup-seed" class="im-input" placeholder="Random" spellcheck="false">
+        <button class="im-btn" id="btn-random-seed">🎲 Randomize</button>
+      </div>
+    </div>
+    <div class="im-field">
+      <label>RIVAL NATIONS</label>
+      <div class="im-rival-row" id="setup-rivals"></div>
+    </div>
+    <div class="im-field">
+      <label>YOUR NATION</label>
+      <div class="im-nation-grid" id="setup-nations"></div>
+    </div>
+    <div class="im-menu-buttons">
+      <button class="im-btn im-btn-primary" id="btn-found">⚔️ BEGIN CONQUEST</button>
+      <button class="im-btn" id="btn-setup-back">← BACK</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============== MY CAMPAIGNS (save slots) ============== -->
+<div id="screen-saves" class="im-screen">
+  <div class="im-menu-box im-wide">
+    <h2 class="im-screen-title">MY CAMPAIGNS</h2>
+    <div id="saves-list" class="im-saves-list"></div>
+    <div class="im-menu-buttons"><button class="im-btn" id="btn-saves-back">← BACK</button></div>
+  </div>
+</div>
+
+<!-- ============== GAME SCREEN ============== -->
+<div id="screen-game" class="im-screen im-game-screen">
+  <header class="im-topbar">
+    <button class="im-icon-btn" id="btn-menu">☰</button>
+    <div class="im-nation-name" id="hud-nation-name">Nation</div>
+    <div class="im-date" id="hud-date">Tick 0</div>
+    <div class="im-topstats" id="hud-stats"></div>
+    <div class="im-speed" id="hud-speed">
+      <button class="im-speed-btn" data-speed="0">⏸</button>
+      <button class="im-speed-btn on" data-speed="1">1x</button>
+      <button class="im-speed-btn" data-speed="2">2x</button>
+      <button class="im-speed-btn" data-speed="3">3x</button>
+    </div>
+  </header>
+
+  <main class="im-main">
+    <div class="im-map-wrap" id="map-wrap">
+      <canvas id="map-canvas"></canvas>
+      <div class="im-map-tip" id="map-tip"></div>
+      <div class="im-toasts" id="toasts"></div>
+    </div>
+
+    <aside class="im-dash">
+      <div class="im-tabs" id="dash-tabs">
+        <button class="im-tab on" data-tab="overview">Overview</button>
+        <button class="im-tab" data-tab="province">Province</button>
+        <button class="im-tab" data-tab="tech">Tech</button>
+        <button class="im-tab" data-tab="rivals">Rivals</button>
+        <button class="im-tab" data-tab="log">Log</button>
+      </div>
+      <div class="im-dash-body" id="dash-body"></div>
+    </aside>
+  </main>
+
+  <!-- game over modal -->
+  <div class="im-modal hidden" id="gameover-modal">
+    <div class="im-modal-box" id="gameover-box"></div>
+  </div>
+
+  <!-- generic modal (pause menu) -->
+  <div class="im-modal hidden" id="modal">
+    <div class="im-modal-box" id="modal-box"></div>
+  </div>
+</div>
+
+<script src="data.js"></script>
+<script src="worldgen.js"></script>
+<script src="simulation.js"></script>
+<script src="ui.js"></script>
+<script src="imperium.js"></script>
+</body>
+</html>

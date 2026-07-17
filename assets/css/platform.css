@@ -163,6 +163,16 @@ a{color:inherit;text-decoration:none}
 }
 .gx-card-nexus{border-color:rgba(74,222,128,.25)}
 .gx-card-nexus:hover{border-color:rgba(74,222,128,.6);box-shadow:0 16px 40px rgba(0,0,0,.5),0 0 0 1px rgba(74,222,128,.3)}
+.gx-badge-imperium{background:rgba(239,68,68,.16);color:#f87171}
+.art-imperium{background:linear-gradient(135deg,#2a1216,#7f1d1d 55%,#f2b03d);position:relative}
+.art-imperium::before{
+  content:"";position:absolute;inset:0;
+  background:radial-gradient(circle at 30% 30%,transparent 0,transparent 35%,rgba(0,0,0,.2) 60%),
+    repeating-linear-gradient(60deg,rgba(255,255,255,.05) 0 1px,transparent 1px 22px),
+    repeating-linear-gradient(-60deg,rgba(255,255,255,.05) 0 1px,transparent 1px 22px);
+}
+.gx-card-imperium{border-color:rgba(239,68,68,.25)}
+.gx-card-imperium:hover{border-color:rgba(239,68,68,.6);box-shadow:0 16px 40px rgba(0,0,0,.5),0 0 0 1px rgba(239,68,68,.3)}
 .gx-creations-intro{color:var(--muted);font-size:.92rem;margin-bottom:20px}
 .gx-inline-link{color:var(--accent);font-weight:700}
 .gx-creations-empty{
