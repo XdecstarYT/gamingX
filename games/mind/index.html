@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GX Mind — GamingX</title>
+<link rel="stylesheet" href="mind.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧠</text></svg>">
+</head>
+<body>
+
+<!-- ============== LOGIN ============== -->
+<div id="screen-login" class="gm-screen active">
+  <div class="gm-login-box">
+    <a class="gm-back" href="../../index.html">← GamingX Hub</a>
+    <h1 class="gm-logo">🧠 GX <span>MIND</span></h1>
+    <p class="gm-tagline">Train tiny neural networks. Chat with the ones you make.</p>
+    <div class="gm-field">
+      <label>USERNAME</label>
+      <input type="text" id="login-user" class="gm-input" autocomplete="off" spellcheck="false">
+    </div>
+    <div class="gm-field">
+      <label>PASSWORD</label>
+      <input type="password" id="login-pass" class="gm-input" autocomplete="off">
+    </div>
+    <div class="gm-login-error hidden" id="login-error">Incorrect username or password.</div>
+    <button class="gm-btn gm-btn-primary" id="btn-login">LOG IN</button>
+    <p class="gm-notice">⚠️ This is a static, no-backend demo. The login is a local access gate for fun, not real security — the credentials live in this page's own JavaScript and are visible to anyone who looks. Never reuse a real password here.</p>
+  </div>
+</div>
+
+<!-- ============== MAIN APP ============== -->
+<div id="screen-app" class="gm-screen gm-app-screen">
+  <header class="gm-topbar">
+    <a class="gm-back" href="../../index.html">☰</a>
+    <div class="gm-title">🧠 GX Mind</div>
+    <div class="gm-tabs" id="app-tabs">
+      <button class="gm-tab on" data-tab="chat">💬 Chat</button>
+      <button class="gm-tab" data-tab="models">🧬 Models</button>
+      <button class="gm-tab" data-tab="about">ℹ️ How This Works</button>
+    </div>
+    <button class="gm-logout" id="btn-logout">LOG OUT</button>
+  </header>
+  <main class="gm-main" id="app-body"></main>
+</div>
+
+<script src="nn.js"></script>
+<script src="data.js"></script>
+<script src="mind.js"></script>
+</body>
+</html>
