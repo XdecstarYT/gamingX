@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dominion — GamingX</title>
+<link rel="stylesheet" href="dominion.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌍</text></svg>">
+</head>
+<body>
+
+<!-- ============== MAIN MENU ============== -->
+<div id="screen-menu" class="dm-screen active">
+  <div class="dm-menu-box">
+    <a class="dm-back" href="../../index.html">← GamingX Hub</a>
+    <h1 class="dm-logo">DOMINION<span>NATIONS AT WAR</span></h1>
+    <p class="dm-tagline">Build a settlement. Pass your laws. Raise an army. Conquer the map.</p>
+    <div class="dm-menu-buttons">
+      <button class="dm-btn dm-btn-primary" id="btn-new-nation">🌱 FOUND A NEW NATION</button>
+      <button class="dm-btn" id="btn-continue">📂 MY NATIONS</button>
+      <button class="dm-btn" id="btn-howto">📖 HOW TO PLAY</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============== HOW TO PLAY ============== -->
+<div id="screen-howto" class="dm-screen">
+  <div class="dm-menu-box dm-wide">
+    <h2 class="dm-screen-title">HOW TO PLAY</h2>
+    <div class="dm-howto-grid">
+      <div><h3>🏗️ Build</h3><p>Pick a building from the Build tab, then click an owned tile on the map to place it. Buildings take time and treasury to complete.</p></div>
+      <div><h3>💰 Economy</h3><p>Tax rates and funding levels (Economy tab) drive treasury, GDP, inflation and debt. Every lever has a trade-off.</p></div>
+      <div><h3>🏛️ Politics</h3><p>Approval, corruption and elections (Politics tab) determine whether you stay in power. Pass laws to shape your nation.</p></div>
+      <div><h3>🔬 Research</h3><p>Research labs and universities generate points. Spend them in the Tech tab to unlock new buildings and bonuses.</p></div>
+      <div><h3>🌍 Diplomacy</h3><p>Trade, ally with, or aid the AI nations sharing your world. Relations remember your past actions.</p></div>
+      <div><h3>⚔️ War</h3><p>Build a Military Base, train an army (Territory tab), then declare war (World tab) and attack adjacent enemy territory to conquer it. They can attack back.</p></div>
+      <div><h3>⚡ Events</h3><p>Random events will test your nation. Every choice has consequences — there is no single correct answer.</p></div>
+    </div>
+    <div class="dm-menu-buttons"><button class="dm-btn" id="btn-howto-back">← BACK</button></div>
+  </div>
+</div>
+
+<!-- ============== NEW NATION SETUP ============== -->
+<div id="screen-setup" class="dm-screen">
+  <div class="dm-menu-box dm-wide">
+    <h2 class="dm-screen-title">FOUND YOUR NATION</h2>
+    <div class="dm-field">
+      <label>NATION NAME</label>
+      <input type="text" id="setup-name" class="dm-input" maxlength="24" placeholder="e.g. Valtoria" spellcheck="false">
+    </div>
+    <div class="dm-field">
+      <label>MAP SEED</label>
+      <div class="dm-seed-row">
+        <input type="text" id="setup-seed" class="dm-input" placeholder="Random" spellcheck="false">
+        <button class="dm-btn" id="btn-random-seed">🎲 Randomize</button>
+      </div>
+    </div>
+    <div class="dm-field">
+      <label>GOVERNMENT TYPE</label>
+      <div class="dm-gov-grid" id="setup-governments"></div>
+    </div>
+    <div class="dm-field">
+      <label>YOUR PARTY</label>
+      <div class="dm-gov-grid" id="setup-parties"></div>
+    </div>
+    <div class="dm-menu-buttons">
+      <button class="dm-btn dm-btn-primary" id="btn-found">⚡ FOUND NATION</button>
+      <button class="dm-btn" id="btn-setup-back">← BACK</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============== MY NATIONS (save slots) ============== -->
+<div id="screen-saves" class="dm-screen">
+  <div class="dm-menu-box dm-wide">
+    <h2 class="dm-screen-title">MY NATIONS</h2>
+    <div id="saves-list" class="dm-saves-list"></div>
+    <div class="dm-menu-buttons"><button class="dm-btn" id="btn-saves-back">← BACK</button></div>
+  </div>
+</div>
+
+<!-- ============== GAME SCREEN ============== -->
+<div id="screen-game" class="dm-screen dm-game-screen">
+  <header class="dm-topbar">
+    <button class="dm-icon-btn" id="btn-menu">☰</button>
+    <div class="dm-nation-name" id="hud-nation-name">Nation</div>
+    <div class="dm-date" id="hud-date">Week 0</div>
+    <div class="dm-topstats" id="hud-stats"></div>
+    <div class="dm-gov-status" id="hud-gov-status"></div>
+    <button class="dm-autoturn" id="btn-auto-turn" title="Auto-advance turns">AUTO ▶</button>
+    <button class="dm-endturn" id="btn-end-turn">END TURN ▸</button>
+  </header>
+
+  <main class="dm-main">
+    <div class="dm-map-wrap" id="map-wrap">
+      <canvas id="map-canvas"></canvas>
+      <div class="dm-map-tip" id="map-tip"></div>
+      <div class="dm-build-hint hidden" id="build-hint">Placing: <b id="build-hint-name"></b> — click an owned tile · <button id="btn-cancel-build">✕ cancel</button></div>
+      <div class="dm-toasts" id="toasts"></div>
+    </div>
+
+    <aside class="dm-dash">
+      <div class="dm-tabs" id="dash-tabs">
+        <button class="dm-tab on" data-tab="overview">Overview</button>
+        <button class="dm-tab" data-tab="build">Build</button>
+        <button class="dm-tab" data-tab="economy">Economy</button>
+        <button class="dm-tab" data-tab="politics">Politics</button>
+        <button class="dm-tab" data-tab="parliament">Parliament</button>
+        <button class="dm-tab" data-tab="tech">Tech</button>
+        <button class="dm-tab" data-tab="diplomacy">World</button>
+        <button class="dm-tab" data-tab="territory">Territory</button>
+        <button class="dm-tab" data-tab="events">Events</button>
+        <button class="dm-tab" data-tab="archive">Archive</button>
+      </div>
+      <div class="dm-dash-body" id="dash-body"></div>
+    </aside>
+  </main>
+
+  <!-- event modal -->
+  <div class="dm-modal hidden" id="event-modal">
+    <div class="dm-modal-box dm-event-box" id="event-box"></div>
+  </div>
+
+  <!-- generic modal (pause menu, confirmations) -->
+  <div class="dm-modal hidden" id="modal">
+    <div class="dm-modal-box" id="modal-box"></div>
+  </div>
+</div>
+
+<script src="data.js"></script>
+<script src="audio.js"></script>
+<script src="worldgen.js"></script>
+<script src="legislature.js"></script>
+<script src="simulation.js"></script>
+<script src="../../assets/js/three.min.js"></script>
+<script src="ui.js"></script>
+<script src="dominion.js"></script>
+</body>
+</html>
