@@ -19,6 +19,10 @@ const fmt = n => {
   return String(n);
 };
 const fmtMoney = n => '$' + fmt(n);
+function hexAlpha(hex, a) {
+  const n = parseInt(hex.slice(1), 16);
+  return `rgba(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255},${a})`;
+}
 
 let state = null;
 let onChange = () => {};       // called after any state-mutating UI action
@@ -26,70 +30,130 @@ let armedBuild = null;         // building id currently selected for placement
 let selectedTile = null;
 
 /* ------------------------------------------------------------------ */
-/* map renderer                                                        */
+/* map renderer — a real three.js 3D scene (elevation-shaded terrain,   */
+/* instanced tiles/resources, 3D buildings with progress bars & icon   */
+/* sprites, glowing capitals). Pan/zoom/click keep the exact same feel */
+/* as before; picking is done by ray-casting a flat y=0 ground plane   */
+/* so screen<->tile math stays exact regardless of visual elevation.   */
 /* ------------------------------------------------------------------ */
-const TILE = 22;
-let cam = { x: 0, y: 0, zoom: 1 };
-let canvas, ctx;
-let dragging = false, dragStart = null, camStart = null, dragMoved = 0;
+const T = window.THREE;
+const CAM_ANGLE = 55 * Math.PI / 180;
+const DIST_MIN = 6, DIST_MAX = 34, DIST_DEFAULT = 13;
+const TILE_THICK = 0.16;
+const TERRAIN_HEIGHT = { ocean: -0.22, coast: -0.06, wetland: -0.08, plains: 0, desert: 0, tundra: 0, forest: 0.04, hills: 0.16, mountains: 0.38 };
+const RESOURCE_COLOR = { iron: '#9aa5b1', coal: '#2b2f36', oil: '#6b4423', gold: '#fbbf24', fertile: '#22c55e' };
+const CATEGORY_COLOR = { residential: '#f2b03d', commercial: '#38bdf8', industrial: '#f97316', agriculture: '#84cc16', energy: '#eab308', infra: '#94a3b8', civic: '#a855f7', research: '#22d3ee', government: '#ef4444', military: '#64748b' };
+const CATEGORY_HEIGHT = { residential: 0.5, commercial: 0.7, industrial: 0.6, agriculture: 0.22, energy: 0.6, infra: 0.12, civic: 0.65, research: 0.55, government: 0.9, military: 0.5 };
+
+let cam = { x: 0, z: 0, dist: DIST_DEFAULT };
+let canvas, renderer, scene, camera, raycaster, groundPlane;
+let listenersAttached = false;
+let dragging = false, dragStart = null, lastPointer = null, dragMoved = 0;
+let buildingMeshes = new Map();
+let iconTextureCache = new Map();
+let selectionMesh = null;
 
 function initMap(_state) {
   canvas = $('map-canvas');
-  ctx = canvas.getContext('2d');
-  cam.x = (state.cities[0].x) * TILE;
-  cam.y = (state.cities[0].y) * TILE;
-  cam.zoom = 1.4;
+  if (renderer) renderer.dispose();
+  buildingMeshes = new Map();
 
-  canvas.addEventListener('pointerdown', e => {
-    dragging = true; dragMoved = 0;
-    dragStart = { x: e.clientX, y: e.clientY };
-    camStart = { x: cam.x, y: cam.y };
-    canvas.setPointerCapture(e.pointerId);
-  });
-  canvas.addEventListener('pointermove', e => {
-    if (!dragging) { updateTip(e); return; }
-    const dx = (e.clientX - dragStart.x), dy = (e.clientY - dragStart.y);
-    dragMoved = Math.max(dragMoved, Math.hypot(dx, dy));
-    cam.x = camStart.x - dx / cam.zoom;
-    cam.y = camStart.y - dy / cam.zoom;
-  });
-  canvas.addEventListener('pointerup', e => {
-    dragging = false;
-    if (dragMoved < 5) handleMapClick(e);
-  });
-  canvas.addEventListener('wheel', e => {
-    e.preventDefault();
-    cam.zoom = clampZoom(cam.zoom * (e.deltaY < 0 ? 1.1 : 0.9));
-  }, { passive: false });
-  addEventListener('resize', resizeCanvas);
+  scene = new T.Scene();
+  scene.background = new T.Color(0x05070d);
+  scene.fog = new T.Fog(0x05070d, 26, 58);
+  scene.add(new T.HemisphereLight(0x88aaff, 0x141a2c, 0.75));
+  scene.add(new T.AmbientLight(0xffffff, 0.25));
+  const sun = new T.DirectionalLight(0xffffff, 0.9);
+  sun.position.set(-24, 34, 14);
+  scene.add(sun);
+
+  camera = new T.PerspectiveCamera(45, canvas.clientWidth / Math.max(1, canvas.clientHeight), 0.1, 200);
+  renderer = new T.WebGLRenderer({ canvas, antialias: true });
+  renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 2));
+
+  raycaster = new T.Raycaster();
+  groundPlane = new T.Plane(new T.Vector3(0, 1, 0), 0);
+
+  cam.x = state.cities[0].x + 0.5;
+  cam.z = state.cities[0].y + 0.5;
+  cam.dist = DIST_DEFAULT;
+
+  buildWorldMeshes();
+  buildCapitals();
+  buildSelectionMesh();
+
+  if (!listenersAttached) {
+    listenersAttached = true;
+    canvas.addEventListener('pointerdown', e => {
+      dragging = true; dragMoved = 0;
+      dragStart = { x: e.clientX, y: e.clientY };
+      lastPointer = { x: e.clientX, y: e.clientY };
+      canvas.setPointerCapture(e.pointerId);
+    });
+    canvas.addEventListener('pointermove', e => {
+      if (!dragging) { updateTip(e); return; }
+      const dx = (e.clientX - dragStart.x), dy = (e.clientY - dragStart.y);
+      dragMoved = Math.max(dragMoved, Math.hypot(dx, dy));
+      const prevWorld = groundHit(lastPointer.x, lastPointer.y);
+      const curWorld = groundHit(e.clientX, e.clientY);
+      if (prevWorld && curWorld) { cam.x += prevWorld.x - curWorld.x; cam.z += prevWorld.z - curWorld.z; }
+      lastPointer = { x: e.clientX, y: e.clientY };
+    });
+    canvas.addEventListener('pointerup', e => {
+      dragging = false;
+      if (dragMoved < 5) handleMapClick(e);
+    });
+    canvas.addEventListener('wheel', e => {
+      e.preventDefault();
+      cam.dist = clampDist(cam.dist * (e.deltaY < 0 ? 0.9 : 1.111));
+    }, { passive: false });
+    addEventListener('resize', resizeCanvas);
+  }
   resizeCanvas();
 }
-function clampZoom(z) { return Math.max(0.5, Math.min(3, z)); }
+function clampDist(d) { return Math.max(DIST_MIN, Math.min(DIST_MAX, d)); }
 function resizeCanvas() {
-  if (!canvas) return;
-  const dpr = Math.min(devicePixelRatio || 1, 2);
-  canvas.width = canvas.clientWidth * dpr;
-  canvas.height = canvas.clientHeight * dpr;
+  if (!canvas || !renderer) return;
+  const w = canvas.clientWidth || 1, h = canvas.clientHeight || 1;
+  renderer.setSize(w, h, false);
+  camera.aspect = w / h;
+  camera.updateProjectionMatrix();
 }
 
-function screenToTile(clientX, clientY) {
+function updateCameraTransform() {
+  camera.position.set(cam.x, cam.dist * Math.sin(CAM_ANGLE), cam.z + cam.dist * Math.cos(CAM_ANGLE));
+  camera.lookAt(cam.x, 0, cam.z);
+}
+
+function ndcFromClient(clientX, clientY, out) {
   const rect = canvas.getBoundingClientRect();
-  const dpr = Math.min(devicePixelRatio || 1, 2);
-  const scale = TILE * cam.zoom * dpr;
-  const sx = (clientX - rect.left) * dpr, sy = (clientY - rect.top) * dpr;
-  const originX = canvas.width / 2 - cam.x * cam.zoom * dpr;
-  const originY = canvas.height / 2 - cam.y * cam.zoom * dpr;
-  const tx = Math.floor((sx - originX) / scale);
-  const ty = Math.floor((sy - originY) / scale);
-  return { x: tx, y: ty };
+  out.x = ((clientX - rect.left) / rect.width) * 2 - 1;
+  out.y = -((clientY - rect.top) / rect.height) * 2 + 1;
+  return out;
+}
+const _ndc = new T.Vector2();
+function groundHit(clientX, clientY) {
+  updateCameraTransform();
+  ndcFromClient(clientX, clientY, _ndc);
+  raycaster.setFromCamera(_ndc, camera);
+  const hit = new T.Vector3();
+  return raycaster.ray.intersectPlane(groundPlane, hit) ? hit : null;
+}
+function pickTile(clientX, clientY) {
+  const hit = groundHit(clientX, clientY);
+  return hit ? { x: Math.floor(hit.x), y: Math.floor(hit.z) } : null;
+}
+function groundY(x, y) {
+  const t = W.tileAt(state.world, x, y);
+  return (t ? (TERRAIN_HEIGHT[t.terrain] || 0) : 0) + TILE_THICK / 2;
 }
 
 function updateTip(e) {
-  const { x, y } = screenToTile(e.clientX, e.clientY);
-  const tile = W.tileAt(state.world, x, y);
+  const p = pickTile(e.clientX, e.clientY);
   const tip = $('map-tip');
+  const tile = p && W.tileAt(state.world, p.x, p.y);
   if (!tile) { tip.classList.add('hidden'); return; }
-  const b = state.buildings.find(bd => bd.x === x && bd.y === y);
+  const b = state.buildings.find(bd => bd.x === p.x && bd.y === p.y);
   const owner = tile.owner === 0 ? 'Your territory' : tile.owner === -1 ? 'Unclaimed' : (state.nations.find(n => n.id === tile.owner) || {}).name || 'Foreign';
   let html = `<b>${cap(tile.terrain)}</b> · ${owner}`;
   if (tile.resource) html += ` · ${cap(tile.resource)} deposit`;
@@ -100,15 +164,16 @@ function updateTip(e) {
 function cap(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
 
 function handleMapClick(e) {
-  const { x, y } = screenToTile(e.clientX, e.clientY);
-  const tile = W.tileAt(state.world, x, y);
+  const p = pickTile(e.clientX, e.clientY);
+  if (!p) return;
+  const tile = W.tileAt(state.world, p.x, p.y);
   if (!tile) return;
   if (armedBuild) {
-    const res = S.placeBuilding(state, armedBuild, x, y);
+    const res = S.placeBuilding(state, armedBuild, p.x, p.y);
     if (res.ok) { toast(`Placed ${D.BUILDINGS_BY_ID[armedBuild].name}.`, 'build'); armedBuild = null; $('build-hint').classList.add('hidden'); onChange(); }
     else toast(res.reason || 'Cannot place there.', 'warn');
   } else {
-    selectedTile = { x, y };
+    selectedTile = { x: p.x, y: p.y };
   }
 }
 
@@ -118,93 +183,188 @@ function armBuild(type) {
   $('build-hint').classList.remove('hidden');
 }
 
-function renderMap() {
-  if (!canvas) return;
-  const w = canvas.width, h = canvas.height;
-  ctx.setTransform(1, 0, 0, 1, 0, 0);
-  ctx.fillStyle = '#05070d';
-  ctx.fillRect(0, 0, w, h);
-
-  const dpr = Math.min(devicePixelRatio || 1, 2);
-  const scale = TILE * cam.zoom * dpr;
-  ctx.setTransform(scale, 0, 0, scale, w / 2 - cam.x * cam.zoom * dpr, h / 2 - cam.y * cam.zoom * dpr);
-
+/* ---- static world geometry: built once per initMap (terrain never changes) */
+function buildWorldMeshes() {
   const world = state.world;
-  const pad = 2;
-  // cam.x/cam.y are stored in world-pixel units (tileIndex * TILE), matching
-  // the transform's translation term — divide by TILE to get tile-index space.
-  const camTileX = cam.x / TILE, camTileY = cam.y / TILE;
-  const x0 = Math.max(0, Math.floor((camTileX - w / scale / 2) - pad));
-  const x1 = Math.min(world.w - 1, Math.ceil((camTileX + w / scale / 2) + pad));
-  const y0 = Math.max(0, Math.floor((camTileY - h / scale / 2) - pad));
-  const y1 = Math.min(world.h - 1, Math.ceil((camTileY + h / scale / 2) + pad));
+  const geo = new T.BoxGeometry(0.98, TILE_THICK, 0.98);
+  const dummy = new T.Object3D();
+  const riverTiles = [], resourceTiles = [];
+  const byTerrain = {}, ownedTiles = [];
 
-  for (let y = y0; y <= y1; y++) {
-    for (let x = x0; x <= x1; x++) {
+  for (let y = 0; y < world.h; y++) {
+    for (let x = 0; x < world.w; x++) {
       const t = world.tiles[y * world.w + x];
-      ctx.fillStyle = D.TERRAIN[t.terrain].color;
-      ctx.fillRect(x, y, 1.02, 1.02);
-      if (t.owner === 0) { ctx.fillStyle = 'rgba(34,211,238,0.16)'; ctx.fillRect(x, y, 1.02, 1.02); }
-      else if (t.owner > 0) { ctx.fillStyle = hexAlpha(state.nations.find(n => n.id === t.owner)?.color || '#888', 0.16); ctx.fillRect(x, y, 1.02, 1.02); }
-      if (t.river) { ctx.fillStyle = 'rgba(80,160,230,0.85)'; ctx.fillRect(x + 0.35, y, 0.3, 1.02); }
-      if (t.resource) {
-        ctx.font = '0.6px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-        ctx.fillStyle = 'rgba(255,255,255,0.65)';
-        ctx.fillText(RESOURCE_ICON[t.resource] || '?', x + 0.5, y + 0.5);
-      }
+      const h = TERRAIN_HEIGHT[t.terrain] || 0;
+      (byTerrain[t.terrain] ||= []).push({ x, y, h });
+      if (t.river) riverTiles.push({ x, y, h });
+      if (t.resource) resourceTiles.push({ x, y, h, resource: t.resource });
+      if (t.owner !== -1) ownedTiles.push({ x, y, h, owner: t.owner });
     }
   }
-  // territory outline for player — trace edges between an owned tile and any non-owned neighbor
-  ctx.strokeStyle = 'rgba(34,211,238,0.65)'; ctx.lineWidth = 0.05;
-  ctx.beginPath();
-  for (let y = y0; y <= y1; y++) {
-    for (let x = x0; x <= x1; x++) {
+  // one instanced mesh per terrain type — a solid-color material per group,
+  // since per-instance vertex colors on InstancedMesh render as pure black
+  // on this three.js build (no working USE_INSTANCING_COLOR shader chunk)
+  for (const [terrain, tiles] of Object.entries(byTerrain)) {
+    const mat = new T.MeshStandardMaterial({ color: D.TERRAIN[terrain].color, roughness: 0.95 });
+    const mesh = new T.InstancedMesh(geo, mat, tiles.length);
+    mesh.frustumCulled = false; // per-instance positions span the whole map; the mesh's own local bounding sphere would wrongly cull it
+    tiles.forEach((t, i) => { dummy.position.set(t.x + 0.5, t.h, t.y + 0.5); dummy.updateMatrix(); mesh.setMatrixAt(i, dummy.matrix); });
+    mesh.instanceMatrix.needsUpdate = true;
+    scene.add(mesh);
+  }
+  // ownership tint — a thin translucent overlay grouped by owner color
+  const byOwnerColor = {};
+  for (const t of ownedTiles) {
+    const color = t.owner === 0 ? '#22d3ee' : ((state.nations.find(n => n.id === t.owner) || {}).color || '#888888');
+    (byOwnerColor[color] ||= []).push(t);
+  }
+  for (const [color, tiles] of Object.entries(byOwnerColor)) {
+    const tintMat = new T.MeshBasicMaterial({ color, transparent: true, opacity: 0.22, depthWrite: false });
+    const tintMesh = new T.InstancedMesh(geo, tintMat, tiles.length);
+    tintMesh.frustumCulled = false;
+    tiles.forEach((t, i) => { dummy.position.set(t.x + 0.5, t.h + TILE_THICK / 2 + 0.01, t.y + 0.5); dummy.scale.set(1, 0.05, 1); dummy.updateMatrix(); tintMesh.setMatrixAt(i, dummy.matrix); });
+    dummy.scale.set(1, 1, 1);
+    tintMesh.instanceMatrix.needsUpdate = true;
+    scene.add(tintMesh);
+  }
+
+  if (riverTiles.length) {
+    const rGeo = new T.BoxGeometry(0.32, 0.05, 1.0);
+    const rMat = new T.MeshStandardMaterial({ color: 0x4a9fd8, roughness: 0.3, metalness: 0.15 });
+    const riverMesh = new T.InstancedMesh(rGeo, rMat, riverTiles.length);
+    riverMesh.frustumCulled = false;
+    riverTiles.forEach((t, i) => { dummy.position.set(t.x + 0.5, t.h + TILE_THICK / 2 + 0.03, t.y + 0.5); dummy.updateMatrix(); riverMesh.setMatrixAt(i, dummy.matrix); });
+    riverMesh.instanceMatrix.needsUpdate = true;
+    scene.add(riverMesh);
+  }
+
+  if (resourceTiles.length) {
+    const resGeo = new T.SphereGeometry(0.16, 10, 8);
+    const byType = {};
+    for (const rt of resourceTiles) (byType[rt.resource] ||= []).push(rt);
+    for (const [res, tiles] of Object.entries(byType)) {
+      const c = RESOURCE_COLOR[res] || '#ffffff';
+      const rmat = new T.MeshStandardMaterial({ color: c, emissive: c, emissiveIntensity: 0.25, roughness: 0.4 });
+      const mesh = new T.InstancedMesh(resGeo, rmat, tiles.length);
+      mesh.frustumCulled = false;
+      tiles.forEach((t, i) => { dummy.position.set(t.x + 0.5, t.h + TILE_THICK / 2 + 0.16, t.y + 0.5); dummy.updateMatrix(); mesh.setMatrixAt(i, dummy.matrix); });
+      mesh.instanceMatrix.needsUpdate = true;
+      scene.add(mesh);
+    }
+  }
+
+  // territory outline for the player — edges between an owned tile and any non-owned neighbor
+  const pos = [];
+  for (let y = 0; y < world.h; y++) {
+    for (let x = 0; x < world.w; x++) {
       const t = world.tiles[y * world.w + x];
       if (t.owner !== 0) continue;
-      const right = W.tileAt(world, x + 1, y);
-      if (!right || right.owner !== 0) { ctx.moveTo(x + 1, y); ctx.lineTo(x + 1, y + 1); }
-      const left = W.tileAt(world, x - 1, y);
-      if (!left || left.owner !== 0) { ctx.moveTo(x, y); ctx.lineTo(x, y + 1); }
-      const down = W.tileAt(world, x, y + 1);
-      if (!down || down.owner !== 0) { ctx.moveTo(x, y + 1); ctx.lineTo(x + 1, y + 1); }
-      const up = W.tileAt(world, x, y - 1);
-      if (!up || up.owner !== 0) { ctx.moveTo(x, y); ctx.lineTo(x + 1, y); }
+      const eh = (TERRAIN_HEIGHT[t.terrain] || 0) + TILE_THICK / 2 + 0.02;
+      const right = W.tileAt(world, x + 1, y); if (!right || right.owner !== 0) pos.push(x + 1, eh, y, x + 1, eh, y + 1);
+      const left = W.tileAt(world, x - 1, y); if (!left || left.owner !== 0) pos.push(x, eh, y, x, eh, y + 1);
+      const down = W.tileAt(world, x, y + 1); if (!down || down.owner !== 0) pos.push(x, eh, y + 1, x + 1, eh, y + 1);
+      const up = W.tileAt(world, x, y - 1); if (!up || up.owner !== 0) pos.push(x, eh, y, x + 1, eh, y);
     }
   }
-  ctx.stroke();
+  if (pos.length) {
+    const outlineGeo = new T.BufferGeometry();
+    outlineGeo.setAttribute('position', new T.Float32BufferAttribute(pos, 3));
+    scene.add(new T.LineSegments(outlineGeo, new T.LineBasicMaterial({ color: 0x22d3ee })));
+  }
+}
 
-  // buildings
+function buildCapitals() {
+  const group = new T.Group();
+  for (const c of state.cities) group.add(makeCapitalMesh(c.x, c.y, '#22d3ee'));
+  for (const n of state.nations) group.add(makeCapitalMesh(n.x, n.y, n.color));
+  scene.add(group);
+}
+function makeCapitalMesh(x, y, color) {
+  const g = new T.Group();
+  const gy = groundY(x, y);
+  const sphere = new T.Mesh(new T.SphereGeometry(0.42, 16, 12), new T.MeshStandardMaterial({ color, emissive: color, emissiveIntensity: 0.35, roughness: 0.4 }));
+  sphere.position.set(x + 0.5, gy + 0.45, y + 0.5);
+  g.add(sphere);
+  const ring = new T.Mesh(new T.RingGeometry(0.5, 0.62, 24), new T.MeshBasicMaterial({ color: 0xffffff, side: T.DoubleSide, transparent: true, opacity: 0.6 }));
+  ring.rotation.x = -Math.PI / 2; ring.position.set(x + 0.5, gy + 0.02, y + 0.5);
+  g.add(ring);
+  return g;
+}
+
+function buildSelectionMesh() {
+  const edges = new T.EdgesGeometry(new T.BoxGeometry(1, 0.05, 1));
+  selectionMesh = new T.LineSegments(edges, new T.LineBasicMaterial({ color: 0xfde047 }));
+  selectionMesh.visible = false;
+  scene.add(selectionMesh);
+}
+
+function iconTexture(icon) {
+  let tex = iconTextureCache.get(icon);
+  if (tex) return tex;
+  const c = document.createElement('canvas'); c.width = 64; c.height = 64;
+  const cx = c.getContext('2d');
+  cx.font = '46px sans-serif'; cx.textAlign = 'center'; cx.textBaseline = 'middle';
+  cx.fillText(icon, 32, 36);
+  tex = new T.CanvasTexture(c);
+  iconTextureCache.set(icon, tex);
+  return tex;
+}
+
+function syncBuildings() {
+  const seen = new Set();
+  const fullW = 0.6;
   for (const b of state.buildings) {
+    seen.add(b.id);
     const def = D.BUILDINGS_BY_ID[b.type];
-    ctx.font = '0.8px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    if (!b.built) {
-      ctx.fillStyle = 'rgba(255,255,255,0.15)'; ctx.fillRect(b.x + 0.15, b.y + 0.15, 0.7, 0.7);
-      ctx.fillStyle = 'rgba(255,255,255,0.85)';
-      ctx.fillRect(b.x + 0.15, b.y + 0.78, 0.7 * b.progress, 0.08);
-      ctx.globalAlpha = 0.5;
+    const height = CATEGORY_HEIGHT[def.cat] || 0.5;
+    let rec = buildingMeshes.get(b.id);
+    if (!rec) {
+      const group = new T.Group();
+      const box = new T.Mesh(new T.BoxGeometry(0.72, height, 0.72), new T.MeshStandardMaterial({ color: CATEGORY_COLOR[def.cat] || '#94a3b8', roughness: 0.7 }));
+      box.position.y = height / 2;
+      group.add(box);
+      const barBg = new T.Mesh(new T.PlaneGeometry(fullW, 0.08), new T.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.4, side: T.DoubleSide }));
+      barBg.rotation.x = -Math.PI / 2; barBg.position.y = 0.02;
+      const barFill = new T.Mesh(new T.PlaneGeometry(fullW, 0.08), new T.MeshBasicMaterial({ color: 0xffffff, side: T.DoubleSide }));
+      barFill.rotation.x = -Math.PI / 2; barFill.position.y = 0.025;
+      group.add(barBg); group.add(barFill);
+      const sprite = new T.Sprite(new T.SpriteMaterial({ map: iconTexture(def.icon), transparent: true }));
+      sprite.scale.set(0.55, 0.55, 1);
+      group.add(sprite);
+      const gy = groundY(b.x, b.y);
+      group.position.set(b.x + 0.5, gy, b.y + 0.5);
+      scene.add(group);
+      rec = { group, box, barBg, barFill, sprite, height };
+      buildingMeshes.set(b.id, rec);
     }
-    ctx.fillText(def.icon, b.x + 0.5, b.y + 0.48);
-    ctx.globalAlpha = 1;
+    rec.sprite.position.y = rec.height + 0.4;
+    if (b.built) {
+      rec.box.material.transparent = false; rec.box.material.opacity = 1;
+      rec.barBg.visible = false; rec.barFill.visible = false;
+    } else {
+      rec.box.material.transparent = true; rec.box.material.opacity = 0.45;
+      rec.barBg.visible = true; rec.barFill.visible = true;
+      const p = Math.max(0.001, b.progress);
+      rec.barFill.scale.x = p;
+      rec.barFill.position.x = -fullW / 2 + (fullW * p) / 2;
+    }
   }
-  // AI + player capitals
-  for (const c of state.cities) drawCapital(c.x, c.y, '#22d3ee');
-  for (const n of state.nations) drawCapital(n.x, n.y, n.color);
+  for (const [id, rec] of buildingMeshes) {
+    if (!seen.has(id)) { scene.remove(rec.group); buildingMeshes.delete(id); }
+  }
+}
 
-  // selection highlight
+function renderMap() {
+  if (!renderer) return;
+  updateCameraTransform();
+  syncBuildings();
   if (selectedTile) {
-    ctx.strokeStyle = '#fde047'; ctx.lineWidth = 0.08;
-    ctx.strokeRect(selectedTile.x + 0.03, selectedTile.y + 0.03, 0.94, 0.94);
+    selectionMesh.visible = true;
+    selectionMesh.position.set(selectedTile.x + 0.5, groundY(selectedTile.x, selectedTile.y) + 0.02, selectedTile.y + 0.5);
+  } else {
+    selectionMesh.visible = false;
   }
-}
-const RESOURCE_ICON = { iron: '⛓', coal: '⚫', oil: '🛢', gold: '★', fertile: '✚' };
-function hexAlpha(hex, a) {
-  const n = parseInt(hex.slice(1), 16);
-  return `rgba(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255},${a})`;
-}
-function drawCapital(x, y, color) {
-  ctx.beginPath(); ctx.arc(x + 0.5, y + 0.5, 0.45, 0, 7);
-  ctx.fillStyle = color; ctx.fill();
-  ctx.strokeStyle = '#fff'; ctx.lineWidth = 0.06; ctx.stroke();
+  renderer.render(scene, camera);
 }
 
 /* ------------------------------------------------------------------ */

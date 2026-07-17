@@ -153,5 +153,54 @@ window.GX = (() => {
     });
   }
 
+  /* ---------- cross-promo: a small, dismissible callout for the platform's flagship game ---------- */
+  function initPromo() {
+    if (location.pathname.includes('/nexus/')) return; // never promote Nexus on its own page
+    let dismissed = false;
+    try { dismissed = localStorage.getItem('gamingx.promo.nexus3d.dismissed') === '1'; } catch (e) {}
+    if (dismissed) return;
+    setTimeout(() => {
+      if (document.getElementById('gx-promo')) return;
+      const style = document.createElement('style');
+      style.textContent = `
+        #gx-promo{position:fixed;right:16px;bottom:16px;z-index:20;max-width:270px;
+          background:#12162a;border:1px solid rgba(74,222,128,.35);border-radius:14px;
+          padding:14px 16px;box-shadow:0 12px 32px rgba(0,0,0,.5);
+          font-family:'Segoe UI',system-ui,-apple-system,Roboto,Helvetica,Arial,sans-serif;
+          color:#e8ecf8;display:flex;gap:10px;animation:gx-promo-in .35s ease-out;}
+        @keyframes gx-promo-in{from{transform:translateY(16px);opacity:0}to{transform:translateY(0);opacity:1}}
+        #gx-promo .gx-promo-icon{font-size:1.6rem;flex-shrink:0;line-height:1}
+        #gx-promo .gx-promo-body{flex:1;min-width:0}
+        #gx-promo b{display:block;font-size:.8rem;margin-bottom:3px;padding-right:14px}
+        #gx-promo p{margin:0 0 8px;font-size:.7rem;color:#8b93ad;line-height:1.4}
+        #gx-promo a{display:inline-block;font-size:.7rem;font-weight:800;padding:5px 11px;border-radius:7px;
+          background:linear-gradient(90deg,#22d3ee,#a855f7);color:#08101c;text-decoration:none}
+        #gx-promo .gx-promo-x{position:absolute;top:8px;right:10px;color:#8b93ad;font-size:.9rem;
+          line-height:1;background:none;border:none;cursor:pointer;padding:2px}
+        #gx-promo .gx-promo-x:hover{color:#e8ecf8}
+      `;
+      document.head.appendChild(style);
+      const el = document.createElement('div');
+      el.id = 'gx-promo';
+      el.style.position = 'fixed';
+      el.innerHTML = `
+        <button class="gx-promo-x" aria-label="Dismiss">✕</button>
+        <span class="gx-promo-icon">🌐</span>
+        <div class="gx-promo-body">
+          <b>NEW: Project Nexus in 3D</b>
+          <p>Build an empire, run a parliament, rule in 3D — GamingX's flagship game.</p>
+          <a href="../nexus/index.html">Play now →</a>
+        </div>`;
+      document.body.appendChild(el);
+      const remove = () => el.remove();
+      el.querySelector('.gx-promo-x').addEventListener('click', () => {
+        try { localStorage.setItem('gamingx.promo.nexus3d.dismissed', '1'); } catch (e) {}
+        remove();
+      });
+      setTimeout(remove, 12000);
+    }, 4000);
+  }
+  try { initPromo(); } catch (e) {}
+
   return { $, show, hide, hud, hi, setHi, beep, boom, fanfare, shake, confetti, celebrate, renderer3d, onResize };
 })();
