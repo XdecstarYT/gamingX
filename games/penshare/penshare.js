@@ -35,6 +35,7 @@ function start(profile) {
   $('screen-app').classList.add('active');
   document.querySelectorAll('.ps-nav-btn').forEach(b => b.addEventListener('click', () => switchView(b.dataset.view)));
   $('btn-profile').addEventListener('click', () => switchView('profile'));
+  S.startCommonNotifications(me);
   renderApp();
 }
 function switchView(v) {

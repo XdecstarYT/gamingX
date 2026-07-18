@@ -289,6 +289,79 @@ async function mountAuthGate(opts) {
   render();
 }
 
+/* ------------------------------------------------------------------ */
+/* notifications (works while the app is open in a tab)                 */
+/* ------------------------------------------------------------------ */
+/* Honest scope: this shows a browser notification when the app is open
+   (even in a background tab) via the Notifications API + Supabase Realtime.
+   True closed-browser push needs a service worker on an https host, which a
+   file://-opened static site can't register — so this covers "open app". */
+let _bannerCss = false;
+function injectBannerCss() {
+  if (_bannerCss) return; _bannerCss = true;
+  const s = document.createElement('style');
+  s.textContent = `
+  .gxs-banner{position:fixed;top:14px;left:50%;transform:translateX(-50%) translateY(-24px);z-index:100000;
+    display:flex;align-items:center;gap:11px;max-width:min(420px,92vw);padding:11px 15px;border-radius:14px;
+    background:rgba(20,20,30,.92);backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,.14);
+    color:#f2f2f7;box-shadow:0 16px 40px rgba(0,0,0,.5);opacity:0;transition:opacity .25s,transform .25s;cursor:pointer;
+    font-family:'Segoe UI',system-ui,-apple-system,Roboto,Arial,sans-serif}
+  .gxs-banner.show{opacity:1;transform:translateX(-50%) translateY(0)}
+  .gxs-banner .ic{font-size:1.5rem;flex-shrink:0}
+  .gxs-banner .tt{font-weight:800;font-size:.86rem}
+  .gxs-banner .bd{color:#b9b9cc;font-size:.78rem;margin-top:1px}`;
+  document.head.appendChild(s);
+}
+function showBanner(icon, title, body, onClick) {
+  injectBannerCss();
+  const el = document.createElement('div'); el.className = 'gxs-banner';
+  el.innerHTML = `<div class="ic">${icon || '🔔'}</div><div><div class="tt">${title}</div>${body ? `<div class="bd">${body}</div>` : ''}</div>`;
+  el.addEventListener('click', () => { try { window.focus(); } catch (e) {} if (onClick) onClick(); el.remove(); });
+  document.body.appendChild(el);
+  requestAnimationFrame(() => el.classList.add('show'));
+  setTimeout(() => { el.classList.remove('show'); setTimeout(() => el.remove(), 300); }, 5200);
+}
+
+async function ensureNotifyPermission() {
+  if (typeof Notification === 'undefined') return 'unsupported';
+  if (Notification.permission === 'granted' || Notification.permission === 'denied') return Notification.permission;
+  try { return await Notification.requestPermission(); } catch (e) { return 'default'; }
+}
+
+/* notify: OS notification when the tab is hidden + granted; always an in-app banner. */
+function notify(icon, title, body, onClick) {
+  try {
+    if (typeof Notification !== 'undefined' && Notification.permission === 'granted' && document.hidden) {
+      const n = new Notification(title, { body: body || '', tag: title + body });
+      n.onclick = () => { try { window.focus(); } catch (e) {} if (onClick) onClick(); n.close(); };
+    }
+  } catch (e) {}
+  showBanner(icon, title, body, onClick);
+}
+
+/* realtime subscription to INSERTs (or a given event) on a table, filtered.
+   returns the channel; pass to unwatch() to stop. */
+const _channels = [];
+function watch(table, event, filter, handler) {
+  if (!available()) return null;
+  const ch = client().channel('gx-' + table + '-' + Math.random().toString(36).slice(2, 8))
+    .on('postgres_changes', { event: event || 'INSERT', schema: 'public', table, filter }, p => { try { handler(p.new || p.old, p); } catch (e) {} })
+    .subscribe();
+  _channels.push(ch);
+  return ch;
+}
+function unwatch(ch) { try { client().removeChannel(ch); } catch (e) {} }
+function unwatchAll() { _channels.splice(0).forEach(ch => { try { client().removeChannel(ch); } catch (e) {} }); }
+
+/* Common to every app: ask for permission once, then notify on new followers. */
+async function startCommonNotifications(profile) {
+  await ensureNotifyPermission();
+  watch('follows', 'INSERT', `following_id=eq.${profile.id}`, async row => {
+    const p = await getProfile(row.follower_id).catch(() => null);
+    notify('➕', 'New follower', (p ? '@' + p.username : 'Someone') + ' started following you');
+  });
+}
+
 return {
   available, client, SUPABASE_URL,
   signUp, signIn, signOut, currentUser, currentProfile, onAuthChange,
@@ -296,5 +369,6 @@ return {
   follow, unfollow, isFollowing, followingIds, followCounts,
   uploadFile, publicUrl, signedUrl, removeFile,
   mountAuthGate, AVATARS, cleanUsername,
+  ensureNotifyPermission, notify, showBanner, watch, unwatch, unwatchAll, startCommonNotifications,
 };
 })();

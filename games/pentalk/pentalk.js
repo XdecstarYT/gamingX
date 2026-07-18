@@ -34,7 +34,29 @@ function start(profile) {
   $('screen-app').classList.add('active');
   document.querySelectorAll('.pt-nav-btn').forEach(b => b.addEventListener('click', () => switchView(b.dataset.view)));
   $('btn-profile').addEventListener('click', () => switchView('profile'));
+  startNotifications();
   renderApp();
+}
+
+/* live notifications: new snaps, friend requests, accepted requests, followers */
+function startNotifications() {
+  S.startCommonNotifications(me);
+  S.watch('pt_snaps', 'INSERT', `recipient_id=eq.${me.id}`, async row => {
+    if (row.is_story) return;
+    const p = await S.getProfile(row.sender_id).catch(() => null);
+    S.notify('📸', 'New snap!', (p ? '@' + p.username : 'Someone') + ' sent you a snap', () => switchView('chats'));
+    if (currentView === 'chats') renderApp();
+  });
+  S.watch('pt_friends', 'INSERT', `addressee_id=eq.${me.id}`, async row => {
+    const p = await S.getProfile(row.requester_id).catch(() => null);
+    S.notify('👋', 'Friend request', (p ? '@' + p.username : 'Someone') + ' wants to be friends', () => switchView('friends'));
+    if (currentView === 'friends') renderApp();
+  });
+  S.watch('pt_friends', 'UPDATE', `requester_id=eq.${me.id}`, async row => {
+    if (row.status !== 'accepted') return;
+    const p = await S.getProfile(row.addressee_id).catch(() => null);
+    S.notify('🎉', 'Friend added', (p ? '@' + p.username : 'Someone') + ' accepted your friend request');
+  });
 }
 function switchView(v) {
   if (v !== 'camera') stopCamera();

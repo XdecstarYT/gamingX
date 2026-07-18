@@ -53,6 +53,7 @@ function start(profile) {
   $('comment-drawer').querySelector('.pf-drawer-handle').addEventListener('click', closeComments);
   $('cd-send').addEventListener('click', postComment);
   $('cd-input').addEventListener('keydown', e => { if (e.key === 'Enter') postComment(); });
+  S.startCommonNotifications(me);
   renderApp();
 }
 

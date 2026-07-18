@@ -44,6 +44,7 @@ async function start(profile) {
   $('btn-profile').addEventListener('click', () => switchView('library'));
   wirePlayerChrome();
   PWPlayer.subscribe(renderPlayer);
+  S.startCommonNotifications(me);
   await refreshLikes();
   renderView();
 }
