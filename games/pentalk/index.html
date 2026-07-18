@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>PenTalk — GamingX</title>
+<link rel="stylesheet" href="pentalk.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>👻</text></svg>">
+</head>
+<body>
+<div id="screen-app" class="pt-screen">
+  <header class="pt-topbar">
+    <a class="pt-back" href="../../index.html">☰</a>
+    <div class="pt-logo">👻 Pen<span>Talk</span></div>
+    <button class="pt-icon-btn" id="btn-profile">👤</button>
+  </header>
+  <main id="app-body" class="pt-main"></main>
+  <nav class="pt-bottomnav">
+    <button class="pt-nav-btn" data-view="chats"><span class="ic">💬</span><span class="lb">Chats</span></button>
+    <button class="pt-nav-btn on" data-view="camera"><span class="ic">📸</span><span class="lb">Camera</span></button>
+    <button class="pt-nav-btn" data-view="stories"><span class="ic">▶️</span><span class="lb">Stories</span></button>
+    <button class="pt-nav-btn" data-view="friends"><span class="ic">👥</span><span class="lb">Friends</span></button>
+  </nav>
+</div>
+
+<div id="viewer" class="pt-viewer hidden"></div>
+<div id="pt-toast" class="pt-toast"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="../../assets/js/gx-social.js"></script>
+<script src="pentalk.js"></script>
+</body>
+</html>

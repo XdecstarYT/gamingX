@@ -9,26 +9,7 @@
 </head>
 <body>
 
-<!-- ============== ONBOARDING ============== -->
-<div id="screen-onboard" class="pf-screen active">
-  <div class="pf-onboard-box">
-    <a class="pf-back" href="../../index.html">← GamingX Hub</a>
-    <h1 class="pf-logo">📱 <span>Penfrank</span></h1>
-    <p class="pf-tagline">Your own short-video feed. Upload clips, scroll, like, comment — all on this device.</p>
-    <div class="pf-field">
-      <label>DISPLAY NAME</label>
-      <input type="text" id="ob-name" maxlength="20" placeholder="e.g. jamie" autocomplete="off" spellcheck="false">
-    </div>
-    <div class="pf-field">
-      <label>PICK AN AVATAR</label>
-      <div class="pf-avatar-row" id="ob-avatars"></div>
-    </div>
-    <button id="btn-onboard-start" class="pf-btn pf-btn-primary">START SCROLLING</button>
-    <p class="pf-notice">⚠️ Penfrank runs entirely in this browser tab — there's no server and no other real users. Anything you upload is saved only on this device (IndexedDB), never sent anywhere. The "For You" feed mixes your uploads with a few built-in animated demo clips so it isn't empty on day one.</p>
-  </div>
-</div>
-
-<!-- ============== MAIN APP ============== -->
+<!-- Main app (revealed after the shared GamingX auth gate) -->
 <div id="screen-app" class="pf-screen pf-app-screen">
   <header class="pf-topbar">
     <a class="pf-back" href="../../index.html">☰</a>
@@ -46,7 +27,6 @@
   </nav>
 </div>
 
-<!-- comment drawer (shared overlay, reused for whichever post is open) -->
 <div id="comment-overlay" class="pf-overlay hidden"></div>
 <div id="comment-drawer" class="pf-drawer">
   <div class="pf-drawer-handle"></div>
@@ -60,7 +40,8 @@
 
 <div id="pf-toast" class="pf-toast"></div>
 
-<script src="db.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="../../assets/js/gx-social.js"></script>
 <script src="demo-content.js"></script>
 <script src="penfrank.js"></script>
 </body>
