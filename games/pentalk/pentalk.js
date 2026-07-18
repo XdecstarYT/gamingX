@@ -38,6 +38,7 @@ function start(profile) {
   document.querySelectorAll('.pt-nav-btn').forEach(b => b.addEventListener('click', () => switchView(b.dataset.view)));
   $('btn-profile').addEventListener('click', () => switchView('profile'));
   startNotifications();
+  if (window.PTCalls) PTCalls.init(S, me);
   renderApp();
 }
 
@@ -288,6 +289,8 @@ async function renderThread(body, f) {
       <button id="th-back">←</button>
       <div class="pt-avatar sm">${esc(f.avatar)}</div>
       <div class="pt-thread-who"><div class="nm">${esc(f.display_name)}</div><div class="hd">@${esc(f.username)}</div></div>
+      <button class="pt-thread-icon" id="th-voice" title="Voice call">📞</button>
+      <button class="pt-thread-icon" id="th-video" title="Video call">🎥</button>
       <button class="pt-thread-cam" id="th-cam" title="Send a snap">📷</button>
     </div>
     <div class="pt-thread-scroll" id="th-scroll"><div class="pt-empty-note">Loading…</div></div>
@@ -298,6 +301,8 @@ async function renderThread(body, f) {
   </div>`;
   $('th-back').addEventListener('click', () => { if (threadCh) { S.unwatch(threadCh); threadCh = null; } currentThread = null; renderApp(); });
   $('th-cam').addEventListener('click', () => { snapTo = f; switchViewKeepSnap('camera'); });
+  $('th-voice').addEventListener('click', () => { if (window.PTCalls) PTCalls.call(f, 'voice'); });
+  $('th-video').addEventListener('click', () => { if (window.PTCalls) PTCalls.call(f, 'video'); });
   const send = async () => {
     const input = $('th-msg'); const text = input.value.trim(); if (!text) return;
     input.value = '';
