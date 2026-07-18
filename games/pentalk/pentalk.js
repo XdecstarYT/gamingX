@@ -15,6 +15,9 @@ let me = null;
 let currentView = 'camera';
 let camStream = null;
 let pending = null; // { blob, url, type } captured/picked media awaiting send
+let currentThread = null; // friend profile when a 1:1 chat thread is open
+let threadCh = null;      // realtime channel for the open thread
+let snapTo = null;        // when set, camera returns to this friend's thread after sending
 
 function toast(m) { const t = $('pt-toast'); t.textContent = m; t.classList.add('show'); clearTimeout(toast._t); toast._t = setTimeout(() => t.classList.remove('show'), 1900); }
 function fkFriendReq() { return 'pt_friends_requester_id_fkey'; }
@@ -57,9 +60,16 @@ function startNotifications() {
     const p = await S.getProfile(row.addressee_id).catch(() => null);
     S.notify('🎉', 'Friend added', (p ? '@' + p.username : 'Someone') + ' accepted your friend request');
   });
+  S.watch('pt_messages', 'INSERT', `recipient_id=eq.${me.id}`, async row => {
+    if (currentThread && row.sender_id === currentThread.id) return; // already visible in the open thread
+    const p = await S.getProfile(row.sender_id).catch(() => null);
+    S.notify('💬', (p ? '@' + p.username : 'New message'), (row.text || '').slice(0, 60), () => { if (p) openThread(p); else switchView('chats'); });
+  });
 }
 function switchView(v) {
   if (v !== 'camera') stopCamera();
+  if (threadCh) { S.unwatch(threadCh); threadCh = null; }
+  currentThread = null;
   currentView = v;
   document.querySelectorAll('.pt-nav-btn').forEach(b => b.classList.toggle('on', b.dataset.view === v));
   renderApp();
@@ -159,7 +169,7 @@ async function openSend(blob, type) {
   $('send-cancel').addEventListener('click', () => { pending = null; switchView('camera'); });
 
   let toStory = false;
-  const selected = new Set();
+  const selected = new Set(snapTo ? [snapTo.id] : []);
   $('story-check').addEventListener('click', () => { toStory = !toStory; $('story-check').classList.toggle('on', toStory); $('story-check').textContent = toStory ? '✓' : ''; updateSendBtn(); });
 
   const friends = await getFriends();
@@ -168,8 +178,9 @@ async function openSend(blob, type) {
   else {
     list.innerHTML = '';
     for (const f of friends) {
+      const on = selected.has(f.id);
       const row = document.createElement('div'); row.className = 'pt-send-row';
-      row.innerHTML = `<div class="pt-avatar">${esc(f.avatar)}</div><div class="info"><div class="nm">${esc(f.display_name)}</div><div class="hd">@${esc(f.username)}</div></div><div class="pt-check"></div>`;
+      row.innerHTML = `<div class="pt-avatar">${esc(f.avatar)}</div><div class="info"><div class="nm">${esc(f.display_name)}</div><div class="hd">@${esc(f.username)}</div></div><div class="pt-check${on ? ' on' : ''}">${on ? '✓' : ''}</div>`;
       const chk = row.querySelector('.pt-check');
       row.addEventListener('click', () => { if (selected.has(f.id)) { selected.delete(f.id); chk.classList.remove('on'); chk.textContent = ''; } else { selected.add(f.id); chk.classList.add('on'); chk.textContent = '✓'; } updateSendBtn(); });
       list.appendChild(row);
@@ -193,71 +204,180 @@ async function doSend(selected, toStory, caption) {
     if (error) throw error;
     pending = null;
     toast(toStory && selected.size ? 'Sent & posted to story!' : toStory ? 'Posted to your story!' : 'Snap sent!');
-    switchView('chats');
+    const back = snapTo; snapTo = null;
+    if (back && selected.has(back.id)) { currentView = 'chats'; document.querySelectorAll('.pt-nav-btn').forEach(b => b.classList.toggle('on', b.dataset.view === 'chats')); openThread(back); }
+    else switchView('chats');
   } catch (e) { toast('Send failed: ' + (e.message || 'error')); btn.disabled = false; btn.textContent = 'Send'; }
 }
 
 /* ------------------------------------------------------------------ */
-/* chats                                                                */
+/* chats: friend list -> 1:1 thread (text messages + snaps)             */
 /* ------------------------------------------------------------------ */
 async function renderChats(body) {
+  if (currentThread) return renderThread(body, currentThread);
   const inner = document.createElement('div'); inner.className = 'pt-inner';
   inner.innerHTML = '<div class="pt-empty-note">Loading…</div>';
   body.appendChild(inner);
   const c = S.client();
-  const [friends, incoming, outgoing] = await Promise.all([
+  const [friends, mRecv, mSent, sRecv, sSent] = await Promise.all([
     getFriends(),
-    c.from('pt_snaps').select(`id,sender_id,storage_path,media_type,caption,created_at,sender:profiles!${fkSnapSender()}(*)`).eq('recipient_id', me.id).eq('is_story', false).order('created_at', { ascending: true }),
-    c.from('pt_snaps').select('recipient_id').eq('sender_id', me.id).eq('is_story', false),
+    c.from('pt_messages').select('*').eq('recipient_id', me.id),
+    c.from('pt_messages').select('*').eq('sender_id', me.id),
+    c.from('pt_snaps').select('*').eq('recipient_id', me.id).eq('is_story', false),
+    c.from('pt_snaps').select('*').eq('sender_id', me.id).eq('is_story', false),
   ]);
-  const incomingBySender = {};
-  for (const s of (incoming.data || [])) (incomingBySender[s.sender_id] = incomingBySender[s.sender_id] || []).push(s);
-  const outgoingTo = {};
-  for (const s of (outgoing.data || [])) outgoingTo[s.recipient_id] = (outgoingTo[s.recipient_id] || 0) + 1;
+  // index activity by the "other" user
+  const act = {}; // otherId -> { last: item, unopened: n }
+  const touch = (otherId, item) => { const a = act[otherId] || (act[otherId] = { last: null, unopened: 0 }); if (!a.last || new Date(item.created_at) > new Date(a.last.created_at)) a.last = item; return a; };
+  (mRecv.data || []).forEach(m => touch(m.sender_id, { ...m, kind: 'msg', mine: false }));
+  (mSent.data || []).forEach(m => touch(m.recipient_id, { ...m, kind: 'msg', mine: true }));
+  (sRecv.data || []).forEach(s => { const a = touch(s.sender_id, { ...s, kind: 'snap', mine: false }); if (!s.viewed_at) a.unopened++; });
+  (sSent.data || []).forEach(s => touch(s.recipient_id, { ...s, kind: 'snap', mine: true }));
 
   inner.innerHTML = '';
-  if (!friends.length) { inner.innerHTML = '<div class="pt-empty-note">Add friends in the <b>Friends</b> tab, then snap them from the <b>Camera</b>.</div>'; return; }
-  // sort: friends with new snaps first
-  friends.sort((a, b) => ((incomingBySender[b.id] ? 1 : 0) - (incomingBySender[a.id] ? 1 : 0)));
+  if (!friends.length) { inner.innerHTML = '<div class="pt-empty-note">Add friends in the <b>Friends</b> tab, then chat or snap them.</div>'; return; }
+  friends.sort((a, b) => {
+    const A = act[a.id], B = act[b.id];
+    if ((B && B.unopened) !== (A && A.unopened)) return (B ? B.unopened : 0) - (A ? A.unopened : 0);
+    const at = A && A.last ? new Date(A.last.created_at) : 0, bt = B && B.last ? new Date(B.last.created_at) : 0;
+    return bt - at;
+  });
   for (const f of friends) {
-    const news = incomingBySender[f.id] || [];
+    const a = act[f.id] || {}; const last = a.last;
     const row = document.createElement('div'); row.className = 'pt-chat-row';
     let status;
-    if (news.length) status = `<span class="pt-chat-status" style="color:var(--red)"><span class="pt-dot new"></span> New Snap${news.length > 1 ? ' ×' + news.length : ''}</span>`;
-    else if (outgoingTo[f.id]) status = `<span class="pt-chat-status" style="color:var(--accent)"><span class="pt-dot sent"></span> Delivered</span>`;
-    else status = `<span class="pt-chat-status hd"><span class="pt-dot opened"></span> Tap camera to snap</span>`;
+    if (a.unopened) status = `<span class="pt-chat-status" style="color:var(--red)"><span class="pt-dot new"></span> New Snap${a.unopened > 1 ? ' ×' + a.unopened : ''}</span>`;
+    else if (last && last.kind === 'msg') status = `<span class="pt-chat-status hd">${last.mine ? 'You: ' : ''}${esc((last.text || '').slice(0, 32))}</span>`;
+    else if (last && last.kind === 'snap' && last.mine) status = `<span class="pt-chat-status" style="color:${last.viewed_at ? 'var(--muted)' : 'var(--accent)'}"><span class="pt-dot ${last.viewed_at ? 'opened' : 'sent'}"></span> ${last.viewed_at ? 'Opened' : 'Delivered'}</span>`;
+    else if (last && last.kind === 'snap') status = `<span class="pt-chat-status hd"><span class="pt-dot opened"></span> Received</span>`;
+    else status = `<span class="pt-chat-status hd"><span class="pt-dot opened"></span> Tap to chat</span>`;
     row.innerHTML = `<div class="pt-avatar">${esc(f.avatar)}</div><div class="info"><div class="nm">${esc(f.display_name)}</div>${status}</div>`;
-    if (news.length) row.addEventListener('click', () => viewSnaps(news, f));
+    row.addEventListener('click', () => openThread(f));
     inner.appendChild(row);
   }
 }
 
-/* fullscreen ephemeral viewer for a queue of direct snaps (deleted after view) */
-async function viewSnaps(snaps, friend) {
-  const viewer = $('viewer'); viewer.classList.remove('hidden');
-  let idx = 0;
+function openThread(friend) {
+  currentThread = friend;
+  currentView = 'chats';
+  document.querySelectorAll('.pt-nav-btn').forEach(b => b.classList.toggle('on', b.dataset.view === 'chats'));
+  renderApp();
+  // live updates for this thread (messages + snaps from this friend)
+  if (threadCh) { S.unwatch(threadCh); threadCh = null; }
+  threadCh = S.watch('pt_messages', 'INSERT', `recipient_id=eq.${me.id}`, row => { if (currentThread && row.sender_id === currentThread.id) renderThread($('app-body'), currentThread); });
+}
+
+async function fetchTimeline(f) {
   const c = S.client();
-  async function show() {
-    if (idx >= snaps.length) { viewer.classList.add('hidden'); viewer.innerHTML = ''; renderApp(); return; }
-    const snap = snaps[idx];
-    let url;
-    try { url = await S.signedUrl('snaps', snap.storage_path, 600); }
-    catch (e) { idx++; return show(); }
+  const [m1, m2, s1, s2] = await Promise.all([
+    c.from('pt_messages').select('*').eq('sender_id', me.id).eq('recipient_id', f.id),
+    c.from('pt_messages').select('*').eq('sender_id', f.id).eq('recipient_id', me.id),
+    c.from('pt_snaps').select('*').eq('is_story', false).eq('sender_id', me.id).eq('recipient_id', f.id),
+    c.from('pt_snaps').select('*').eq('is_story', false).eq('sender_id', f.id).eq('recipient_id', me.id),
+  ]);
+  const items = [];
+  (m1.data || []).concat(m2.data || []).forEach(x => items.push({ ...x, kind: 'msg' }));
+  (s1.data || []).concat(s2.data || []).forEach(x => items.push({ ...x, kind: 'snap' }));
+  items.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+  return items;
+}
+
+async function renderThread(body, f) {
+  body.innerHTML = `<div class="pt-thread">
+    <div class="pt-thread-head">
+      <button id="th-back">←</button>
+      <div class="pt-avatar sm">${esc(f.avatar)}</div>
+      <div class="pt-thread-who"><div class="nm">${esc(f.display_name)}</div><div class="hd">@${esc(f.username)}</div></div>
+      <button class="pt-thread-cam" id="th-cam" title="Send a snap">📷</button>
+    </div>
+    <div class="pt-thread-scroll" id="th-scroll"><div class="pt-empty-note">Loading…</div></div>
+    <div class="pt-thread-input">
+      <input id="th-msg" placeholder="Send a chat…" maxlength="500" autocomplete="off">
+      <button id="th-send">Send</button>
+    </div>
+  </div>`;
+  $('th-back').addEventListener('click', () => { if (threadCh) { S.unwatch(threadCh); threadCh = null; } currentThread = null; renderApp(); });
+  $('th-cam').addEventListener('click', () => { snapTo = f; switchViewKeepSnap('camera'); });
+  const send = async () => {
+    const input = $('th-msg'); const text = input.value.trim(); if (!text) return;
+    input.value = '';
+    try { await S.client().from('pt_messages').insert({ sender_id: me.id, recipient_id: f.id, text }); renderThread(body, f); }
+    catch (e) { toast('Message failed'); }
+  };
+  $('th-send').addEventListener('click', send);
+  $('th-msg').addEventListener('keydown', e => { if (e.key === 'Enter') send(); });
+
+  const items = await fetchTimeline(f);
+  // mark their messages to me as read
+  const unread = items.filter(i => i.kind === 'msg' && i.sender_id === f.id && !i.read_at).map(i => i.id);
+  if (unread.length) S.client().from('pt_messages').update({ read_at: new Date().toISOString() }).in('id', unread).then(() => {});
+
+  const scroll = $('th-scroll');
+  if (!items.length) { scroll.innerHTML = '<div class="pt-empty-note">No messages yet. Say hi 👋 or send a snap.</div>'; setTimeout(() => $('th-msg') && $('th-msg').focus(), 40); return; }
+  scroll.innerHTML = '';
+  for (const it of items) {
+    const mine = it.sender_id === me.id;
+    if (it.kind === 'msg') {
+      const b = document.createElement('div'); b.className = 'pt-msg ' + (mine ? 'me' : 'them');
+      b.textContent = it.text; scroll.appendChild(b);
+    } else {
+      const b = document.createElement('div'); b.className = 'pt-snap-bubble ' + (mine ? 'me' : 'them');
+      let label, clickable = false;
+      if (mine) { label = it.saved ? '📌 Saved' : it.viewed_at ? '✓ Opened' : '➤ Delivered'; clickable = !!(it.saved || it.viewed_at); }
+      else if (!it.viewed_at) { label = '📸 New Snap · Tap to view'; b.classList.add('new'); clickable = true; }
+      else if (it.saved) { label = '📌 Saved snap · Tap to view'; clickable = true; }
+      else { label = '✓ Opened'; }
+      b.innerHTML = `<span class="ic">${it.media_type === 'video' ? '🎬' : '📸'}</span> <span>${label}</span>`;
+      if (clickable) b.addEventListener('click', () => viewSnap(it, f));
+      scroll.appendChild(b);
+    }
+  }
+  scroll.scrollTop = scroll.scrollHeight;
+  setTimeout(() => $('th-msg') && $('th-msg').focus(), 40);
+}
+
+/* switch to camera without clearing snapTo/thread target */
+function switchViewKeepSnap(v) {
+  stopCamera();
+  currentThread = null;
+  currentView = v;
+  document.querySelectorAll('.pt-nav-btn').forEach(b => b.classList.toggle('on', b.dataset.view === v));
+  renderApp();
+}
+
+/* single-snap viewer: marks opened (no delete), offers Save in chat */
+async function viewSnap(snap, friend) {
+  const viewer = $('viewer'); viewer.classList.remove('hidden');
+  const c = S.client();
+  const isRecipient = snap.recipient_id === me.id;
+  let url;
+  try { url = await S.signedUrl('snaps', snap.storage_path, 600); }
+  catch (e) { viewer.classList.add('hidden'); toast('Snap unavailable'); return; }
+
+  function close() { viewer.classList.add('hidden'); viewer.innerHTML = ''; if (currentThread) renderThread($('app-body'), currentThread); }
+  function paint() {
     viewer.innerHTML = `
-      <div class="pt-progress">${snaps.map((_, i) => `<i><b style="width:${i < idx ? 100 : 0}%"></b></i>`).join('')}</div>
       <div class="meta"><span class="pt-avatar sm">${esc(friend.avatar)}</span> @${esc(friend.username)}</div>
       <button class="close" id="v-close">✕</button>
       ${snap.media_type === 'video' ? `<video src="${url}" autoplay playsinline id="v-media"></video>` : `<img src="${url}" id="v-media">`}
       ${snap.caption ? `<div class="cap">${esc(snap.caption)}</div>` : ''}
-      <div class="tapzones"><div id="v-prev"></div><div id="v-next"></div></div>`;
-    $('v-close').addEventListener('click', () => { viewer.classList.add('hidden'); viewer.innerHTML = ''; renderApp(); });
-    const advance = async () => { try { await c.from('pt_snaps').delete().eq('id', snap.id); } catch (e) {} idx++; show(); };
-    $('v-next').addEventListener('click', advance);
-    $('v-prev').addEventListener('click', advance);
-    if (snap.media_type === 'video') { const m = $('v-media'); m.addEventListener('ended', advance); }
-    else { clearTimeout(show._t); show._t = setTimeout(advance, 5000); }
+      ${isRecipient ? `<button class="pt-save-btn" id="v-save">${snap.saved ? '📌 Saved in chat' : '💾 Save in chat'}</button>` : ''}
+      <div class="tapzones"><div id="v-tap"></div></div>`;
+    $('v-close').addEventListener('click', close);
+    $('v-tap').addEventListener('click', close);
+    const sv = $('v-save');
+    if (sv) sv.addEventListener('click', async e => {
+      e.stopPropagation();
+      const next = !snap.saved;
+      try { await c.from('pt_snaps').update({ saved: next }).eq('id', snap.id); snap.saved = next; toast(next ? 'Saved in chat' : 'Removed from saved'); paint(); }
+      catch (err) { toast('Could not save'); }
+    });
+    if (snap.media_type !== 'video') { clearTimeout(paint._t); paint._t = setTimeout(close, 6000); }
+    else { const m = $('v-media'); if (m) m.addEventListener('ended', close); }
   }
-  show();
+  // mark opened on first view (recipient only)
+  if (isRecipient && !snap.viewed_at) { try { await c.from('pt_snaps').update({ viewed_at: new Date().toISOString() }).eq('id', snap.id); snap.viewed_at = new Date().toISOString(); } catch (e) {} }
+  paint();
 }
 
 /* ------------------------------------------------------------------ */
