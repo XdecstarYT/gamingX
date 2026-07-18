@@ -136,7 +136,7 @@ async function renderHome(body) {
 
   const list = $('feed-list'); list.innerHTML = '<div class="ps-empty-note">Loading…</div>';
   let q = S.client().from('ps_posts')
-    .select('id,text,image_path,created_at,user_id,profiles(username,avatar,display_name),ps_likes(count)')
+    .select('id,text,image_path,created_at,user_id,profiles!ps_posts_user_id_fkey(username,avatar,display_name),ps_likes(count)')
     .is('reply_to', null).order('created_at', { ascending: false }).limit(60);
   if (homeTab === 'following') {
     const ids = await S.followingIds();
@@ -186,9 +186,9 @@ async function openThread(postId) {
   $('th-back').addEventListener('click', () => { ov.classList.add('hidden'); ov.innerHTML = ''; });
 
   const c = S.client();
-  const { data: post } = await c.from('ps_posts').select('id,text,image_path,created_at,user_id,profiles(username,avatar,display_name),ps_likes(count)').eq('id', postId).maybeSingle();
+  const { data: post } = await c.from('ps_posts').select('id,text,image_path,created_at,user_id,profiles!ps_posts_user_id_fkey(username,avatar,display_name),ps_likes(count)').eq('id', postId).maybeSingle();
   if (!post) { $('th-scroll').innerHTML = '<div class="ps-empty-note">This post was deleted.</div>'; return; }
-  const { data: replies } = await c.from('ps_posts').select('id,text,image_path,created_at,user_id,profiles(username,avatar,display_name),ps_likes(count)').eq('reply_to', postId).order('created_at', { ascending: true });
+  const { data: replies } = await c.from('ps_posts').select('id,text,image_path,created_at,user_id,profiles!ps_posts_user_id_fkey(username,avatar,display_name),ps_likes(count)').eq('reply_to', postId).order('created_at', { ascending: true });
   const ids = [post.id].concat((replies || []).map(r => r.id));
   const [likedSet, replyCounts] = await Promise.all([likedSetFor(ids), replyCountsFor(ids)]);
 
@@ -262,7 +262,7 @@ async function renderProfile(body) {
   $('btn-logout').addEventListener('click', async () => { await S.signOut(); location.reload(); });
 
   const wrap = $('my-posts'); wrap.innerHTML = '<div class="ps-empty-note">Loading…</div>';
-  const { data: posts } = await c.from('ps_posts').select('id,text,image_path,created_at,user_id,reply_to,profiles(username,avatar,display_name),ps_likes(count)').eq('user_id', me.id).order('created_at', { ascending: false }).limit(50);
+  const { data: posts } = await c.from('ps_posts').select('id,text,image_path,created_at,user_id,reply_to,profiles!ps_posts_user_id_fkey(username,avatar,display_name),ps_likes(count)').eq('user_id', me.id).order('created_at', { ascending: false }).limit(50);
   if (!posts || !posts.length) { wrap.innerHTML = '<div class="ps-empty-note">You haven\'t posted yet.</div>'; return; }
   const ids = posts.map(p => p.id);
   const [likedSet, replyCounts] = await Promise.all([likedSetFor(ids), replyCountsFor(ids)]);

@@ -113,7 +113,7 @@ async function renderHome(el) {
   const c = S.client();
   const hour = new Date().getHours();
   const greet = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
-  const { data: tracks } = await c.from('music_tracks').select('*,profiles(username,avatar,display_name),music_likes(count)').order('created_at', { ascending: false }).limit(60);
+  const { data: tracks } = await c.from('music_tracks').select('*,profiles!music_tracks_user_id_fkey(username,avatar,display_name),music_likes(count)').order('created_at', { ascending: false }).limit(60);
   const all = (tracks || []);
   const trending = all.slice().sort((a, b) => likeCount(b) - likeCount(a)).slice(0, 10);
   const recent = all.slice(0, 10);
@@ -150,7 +150,7 @@ function sectionRail(title, tiles) {
 
 async function openGenre(name) {
   const el = $('view'); el.innerHTML = '<div class="pw-inner"><div class="pw-empty">Loading…</div></div>';
-  const { data } = await S.client().from('music_tracks').select('*,profiles(username,avatar,display_name),music_likes(count)').eq('genre', name).order('created_at', { ascending: false });
+  const { data } = await S.client().from('music_tracks').select('*,profiles!music_tracks_user_id_fkey(username,avatar,display_name),music_likes(count)').eq('genre', name).order('created_at', { ascending: false });
   const inner = document.createElement('div'); inner.className = 'pw-inner';
   inner.innerHTML = `<div class="pw-greeting">${esc(name)}</div><div class="pw-sub">${(data || []).length} track${(data || []).length === 1 ? '' : 's'}</div>`;
   if (!data || !data.length) inner.insertAdjacentHTML('beforeend', '<div class="pw-empty">No tracks in this genre yet — <b>upload</b> the first one!</div>');
@@ -178,7 +178,7 @@ function renderSearch(el) {
     results.innerHTML = '<div class="pw-empty">Searching…</div>';
     const c = S.client();
     const [tr, ppl] = await Promise.all([
-      c.from('music_tracks').select('*,profiles(username,avatar,display_name),music_likes(count)').or(`title.ilike.%${q}%,artist.ilike.%${q}%,genre.ilike.%${q}%`).limit(40),
+      c.from('music_tracks').select('*,profiles!music_tracks_user_id_fkey(username,avatar,display_name),music_likes(count)').or(`title.ilike.%${q}%,artist.ilike.%${q}%,genre.ilike.%${q}%`).limit(40),
       S.searchProfiles(q, 10),
     ]);
     results.innerHTML = '';
@@ -199,7 +199,7 @@ function artistRow(p) {
 }
 async function openArtist(p) {
   const el = $('view'); el.innerHTML = '<div class="pw-inner"><div class="pw-empty">Loading…</div></div>';
-  const { data } = await S.client().from('music_tracks').select('*,profiles(username,avatar,display_name),music_likes(count)').eq('user_id', p.id).order('created_at', { ascending: false });
+  const { data } = await S.client().from('music_tracks').select('*,profiles!music_tracks_user_id_fkey(username,avatar,display_name),music_likes(count)').eq('user_id', p.id).order('created_at', { ascending: false });
   const following = await S.isFollowing(p.id);
   const inner = document.createElement('div'); inner.className = 'pw-inner';
   inner.innerHTML = `<div style="display:flex;align-items:center;gap:14px;margin:14px 0">
@@ -218,9 +218,9 @@ async function openArtist(p) {
 async function renderLibrary(el) {
   const c = S.client();
   const [likedRes, plRes, mineRes] = await Promise.all([
-    c.from('music_likes').select('track_id, music_tracks(*,profiles(username,avatar,display_name),music_likes(count))').eq('user_id', me.id).order('created_at', { ascending: false }),
+    c.from('music_likes').select('track_id, music_tracks(*,profiles!music_tracks_user_id_fkey(username,avatar,display_name),music_likes(count))').eq('user_id', me.id).order('created_at', { ascending: false }),
     c.from('music_playlists').select('*').eq('user_id', me.id).order('created_at', { ascending: false }),
-    c.from('music_tracks').select('*,profiles(username,avatar,display_name),music_likes(count)').eq('user_id', me.id).order('created_at', { ascending: false }),
+    c.from('music_tracks').select('*,profiles!music_tracks_user_id_fkey(username,avatar,display_name),music_likes(count)').eq('user_id', me.id).order('created_at', { ascending: false }),
   ]);
   const liked = (likedRes.data || []).map(r => r.music_tracks).filter(Boolean);
   const playlists = plRes.data || [];
@@ -261,7 +261,7 @@ async function createPlaylist() {
 
 async function openPlaylist(pl) {
   const el = $('view'); el.innerHTML = '<div class="pw-inner"><div class="pw-empty">Loading…</div></div>';
-  const { data } = await S.client().from('music_playlist_tracks').select('position, music_tracks(*,profiles(username,avatar,display_name),music_likes(count))').eq('playlist_id', pl.id).order('position', { ascending: true });
+  const { data } = await S.client().from('music_playlist_tracks').select('position, music_tracks(*,profiles!music_tracks_user_id_fkey(username,avatar,display_name),music_likes(count))').eq('playlist_id', pl.id).order('position', { ascending: true });
   const tracks = (data || []).map(r => r.music_tracks).filter(Boolean);
   openTrackScreen(pl.name, '💿', tracks.map(prep), pl.color, pl.user_id === me.id ? pl : null);
 }

@@ -78,7 +78,7 @@ function renderApp() {
 async function fetchVideos() {
   const c = S.client();
   let q = c.from('pf_videos')
-    .select('id,user_id,storage_path,caption,tags,created_at,profiles(username,avatar,display_name),pf_likes(count),pf_comments(count)')
+    .select('id,user_id,storage_path,caption,tags,created_at,profiles!pf_videos_user_id_fkey(username,avatar,display_name),pf_likes(count),pf_comments(count)')
     .order('created_at', { ascending: false }).limit(60);
   if (currentFeedTab === 'following') {
     const ids = await S.followingIds();
@@ -233,7 +233,7 @@ async function openComments(videoId) {
 }
 function closeComments() { $('comment-overlay').classList.add('hidden'); $('comment-drawer').classList.remove('open'); currentCommentVideoId = null; }
 async function renderComments() {
-  const { data } = await S.client().from('pf_comments').select('id,text,created_at,profiles(username,avatar)').eq('video_id', currentCommentVideoId).order('created_at', { ascending: true });
+  const { data } = await S.client().from('pf_comments').select('id,text,created_at,profiles!pf_comments_user_id_fkey(username,avatar)').eq('video_id', currentCommentVideoId).order('created_at', { ascending: true });
   const list = $('cd-list'); $('cd-count').textContent = (data || []).length;
   if (!data || !data.length) { list.innerHTML = '<div class="pf-empty-note">No comments yet. Say something!</div>'; return; }
   list.innerHTML = '';
