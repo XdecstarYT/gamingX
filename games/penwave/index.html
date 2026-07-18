@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>PenWave — GamingX</title>
+<link rel="stylesheet" href="penwave.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎧</text></svg>">
+</head>
+<body>
+<div id="screen-app" class="pw-screen">
+  <div class="pw-bg" id="pw-bg"></div>
+
+  <header class="pw-topbar glass">
+    <a class="pw-back" href="../../index.html">☰</a>
+    <div class="pw-logo">🎧 Pen<span>Wave</span></div>
+    <button class="pw-icon-btn" id="btn-profile">👤</button>
+  </header>
+
+  <main id="view" class="pw-view"></main>
+
+  <!-- now playing mini bar -->
+  <div id="mini" class="pw-mini glass hidden">
+    <div class="pw-mini-prog"><i id="mini-prog-fill"></i></div>
+    <div class="pw-mini-art" id="mini-art"></div>
+    <div class="pw-mini-meta"><div class="t" id="mini-title">—</div><div class="a" id="mini-artist"></div></div>
+    <button class="pw-mini-like" id="mini-like">🤍</button>
+    <button class="pw-mini-play" id="mini-play">▶</button>
+  </div>
+
+  <nav class="pw-bottomnav glass">
+    <button class="pw-nav-btn on" data-view="home"><span class="ic">🏠</span><span class="lb">Home</span></button>
+    <button class="pw-nav-btn" data-view="search"><span class="ic">🔍</span><span class="lb">Search</span></button>
+    <button class="pw-nav-btn" data-view="library"><span class="ic">📚</span><span class="lb">Library</span></button>
+    <button class="pw-nav-btn" data-view="upload"><span class="ic">⬆️</span><span class="lb">Upload</span></button>
+  </nav>
+</div>
+
+<!-- full-screen player -->
+<div id="player" class="pw-player hidden">
+  <div class="pw-player-bg" id="player-bg"></div>
+  <div class="pw-player-inner">
+    <div class="pw-player-head">
+      <button id="player-close">⌄</button>
+      <div class="pw-player-head-label">NOW PLAYING</div>
+      <button id="player-queue-btn">☰</button>
+    </div>
+    <div class="pw-player-art" id="player-art"></div>
+    <div class="pw-player-info">
+      <div class="pw-player-title" id="player-title">—</div>
+      <div class="pw-player-artist" id="player-artist"></div>
+    </div>
+    <div class="pw-wave" id="player-wave"></div>
+    <div class="pw-times"><span id="player-cur">0:00</span><span id="player-dur">0:00</span></div>
+    <div class="pw-controls">
+      <button id="c-shuffle" class="pw-c-sec">🔀</button>
+      <button id="c-prev" class="pw-c-main">⏮</button>
+      <button id="c-play" class="pw-c-play">▶</button>
+      <button id="c-next" class="pw-c-main">⏭</button>
+      <button id="c-repeat" class="pw-c-sec">🔁</button>
+    </div>
+    <div class="pw-player-foot">
+      <button id="c-like" class="pw-foot-btn">🤍</button>
+      <div class="pw-vol"><span>🔈</span><input type="range" id="c-vol" min="0" max="100" value="90"><span>🔊</span></div>
+      <button id="c-addpl" class="pw-foot-btn">➕</button>
+    </div>
+  </div>
+</div>
+
+<!-- queue / add-to-playlist sheet -->
+<div id="sheet-overlay" class="pw-sheet-overlay hidden"></div>
+<div id="sheet" class="pw-sheet glass"></div>
+
+<div id="pw-toast" class="pw-toast"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="../../assets/js/gx-social.js"></script>
+<script src="synth.js"></script>
+<script src="player.js"></script>
+<script src="penwave.js"></script>
+</body>
+</html>
