@@ -1,0 +1,129 @@
+/* ============ PENFRANK styles ============ */
+:root{
+  --bg:#0a0a12;
+  --panel:#15151f;
+  --panel2:#1d1d2b;
+  --text:#f2f2f7;
+  --muted:#8b8b9e;
+  --accent:#ff5470;
+  --accent2:#2dd4bf;
+  --green:#22c55e;
+  --red:#ef4444;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%}
+body{
+  background:#000;color:var(--text);overflow:hidden;
+  font-family:'Segoe UI',system-ui,-apple-system,Roboto,Helvetica,Arial,sans-serif;
+  display:flex;flex-direction:column;
+}
+button{font-family:inherit;color:inherit;background:none;border:none;cursor:pointer}
+input,textarea,select{font-family:inherit;color:inherit}
+.hidden{display:none!important}
+
+.pf-screen{position:fixed;inset:0;display:none;align-items:center;justify-content:center;overflow:auto;background:var(--bg)}
+.pf-screen.active{display:flex}
+.pf-app-screen.active{display:flex;flex-direction:column;align-items:stretch;justify-content:flex-start;overflow:hidden}
+
+/* onboarding */
+.pf-onboard-box{width:min(420px,92vw);padding:36px;text-align:center;background:rgba(21,21,31,.9);border:1px solid rgba(255,255,255,.08);border-radius:20px;box-shadow:0 30px 80px rgba(0,0,0,.6);margin:24px 0}
+.pf-back{display:inline-block;margin-bottom:16px;color:var(--muted);text-decoration:none;font-weight:800;font-size:.78rem;letter-spacing:1px}
+.pf-back:hover{color:var(--accent2)}
+.pf-logo{font-size:1.7rem;font-weight:900}
+.pf-logo span{background:linear-gradient(90deg,var(--accent),var(--accent2));-webkit-background-clip:text;background-clip:text;color:transparent}
+.pf-tagline{color:var(--muted);margin:12px 0 22px;font-size:.86rem}
+.pf-field{margin-bottom:16px;text-align:left}
+.pf-field label{display:block;font-size:.68rem;font-weight:800;color:var(--muted);letter-spacing:1.5px;margin-bottom:6px}
+.pf-field input[type=text],.pf-field textarea{width:100%;background:#0d0d15;border:1px solid rgba(255,255,255,.14);border-radius:9px;color:var(--text);font-size:.9rem;padding:10px 12px;outline:none}
+.pf-field input:focus,.pf-field textarea:focus{border-color:rgba(255,84,112,.6)}
+.pf-avatar-row{display:flex;flex-wrap:wrap;gap:8px}
+.pf-avatar-choice{width:44px;height:44px;border-radius:50%;background:#0d0d15;border:2px solid rgba(255,255,255,.1);font-size:1.3rem;display:flex;align-items:center;justify-content:center}
+.pf-avatar-choice.on{border-color:var(--accent);background:rgba(255,84,112,.15)}
+.pf-btn{width:100%;padding:12px 18px;border-radius:11px;font-weight:800;font-size:.9rem;background:var(--panel2);border:1px solid rgba(255,255,255,.1);letter-spacing:.4px;transition:transform .1s,border-color .1s}
+.pf-btn:hover{transform:translateY(-1px);border-color:rgba(255,84,112,.5)}
+.pf-btn-primary{background:linear-gradient(90deg,var(--accent),var(--accent2));color:#0a0a12;border:none}
+.pf-notice{margin-top:18px;font-size:.68rem;line-height:1.5;color:var(--muted);text-align:left;background:rgba(239,68,68,.06);border:1px dashed rgba(239,68,68,.25);border-radius:10px;padding:10px 12px}
+
+/* app shell */
+.pf-topbar{display:flex;align-items:center;gap:10px;padding:10px 14px;flex-shrink:0;background:rgba(10,10,18,.97);border-bottom:1px solid rgba(255,255,255,.08);z-index:5}
+.pf-toptabs{display:flex;gap:18px;margin:0 auto;font-size:.86rem;font-weight:800}
+.pf-toptab{color:var(--muted);padding:4px 2px;border-bottom:2px solid transparent}
+.pf-toptab.on{color:#fff;border-color:var(--accent)}
+.pf-icon-btn{font-size:1.1rem;padding:4px 8px}
+.pf-main{flex:1;overflow:hidden;position:relative}
+
+/* feed */
+.pf-feed-scroll{height:100%;overflow-y:scroll;scroll-snap-type:y mandatory;scroll-behavior:smooth;-webkit-overflow-scrolling:touch}
+.pf-card{height:100%;width:100%;scroll-snap-align:start;position:relative;display:flex;align-items:flex-end;overflow:hidden;background:#000}
+.pf-card video,.pf-card canvas{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.pf-card-gradient{position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,0) 45%,rgba(0,0,0,.8) 100%);pointer-events:none}
+.pf-card-info{position:relative;z-index:2;padding:16px 76px 24px 16px;color:#fff;width:100%}
+.pf-card-user{font-weight:800;margin-bottom:6px;display:flex;align-items:center;gap:8px;font-size:.95rem}
+.pf-card-caption{font-size:.86rem;line-height:1.4;margin-bottom:6px;word-break:break-word}
+.pf-card-tags span{color:#7dd3fc;margin-right:6px;font-size:.8rem}
+.pf-paused-icon{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:3.5rem;color:rgba(255,255,255,.85);z-index:2;pointer-events:none;opacity:0;transition:opacity .15s}
+.pf-card.paused .pf-paused-icon{opacity:1}
+
+.pf-actions{position:absolute;right:8px;bottom:96px;z-index:3;display:flex;flex-direction:column;align-items:center;gap:16px}
+.pf-action-btn{display:flex;flex-direction:column;align-items:center;gap:2px;color:#fff;font-size:1.5rem;background:rgba(0,0,0,.3);border-radius:50%;width:46px;height:46px;justify-content:center;flex-shrink:0}
+.pf-action-btn.liked{color:var(--accent);box-shadow:0 0 0 2px rgba(255,84,112,.5) inset}
+.pf-action-btn.following{box-shadow:0 0 0 2px var(--green) inset}
+.pf-action-count{font-size:.62rem;font-weight:700;color:#fff;background:none;width:auto;height:auto;border-radius:0}
+.pf-mute-badge{position:absolute;top:14px;right:14px;z-index:3;background:rgba(0,0,0,.4);border-radius:50%;width:36px;height:36px;font-size:1.1rem;display:flex;align-items:center;justify-content:center}
+.pf-heart-burst{position:absolute;font-size:5rem;z-index:6;pointer-events:none;left:50%;top:50%;transform:translate(-50%,-50%) scale(.4);opacity:0;animation:pf-heart .65s ease-out forwards}
+@keyframes pf-heart{0%{transform:translate(-50%,-50%) scale(.3);opacity:0}25%{transform:translate(-50%,-50%) scale(1.15);opacity:1}70%{transform:translate(-50%,-50%) scale(1);opacity:1}100%{transform:translate(-50%,-50%) scale(1.05);opacity:0}}
+
+.pf-empty-note{color:var(--muted);text-align:center;padding:40px 24px;font-size:.9rem}
+
+/* bottom nav */
+.pf-bottomnav{display:flex;align-items:center;justify-content:space-around;flex-shrink:0;background:rgba(10,10,18,.98);border-top:1px solid rgba(255,255,255,.08);padding:8px 0 max(8px,env(safe-area-inset-bottom));z-index:5}
+.pf-nav-btn{display:flex;flex-direction:column;align-items:center;gap:2px;font-size:.62rem;color:var(--muted);font-weight:700;padding:4px 18px}
+.pf-nav-btn .ic{font-size:1.35rem}
+.pf-nav-btn.on{color:#fff}
+.pf-upload-fab .ic{background:linear-gradient(90deg,var(--accent),var(--accent2));color:#0a0a12;border-radius:10px;width:44px;height:32px;display:flex;align-items:center;justify-content:center;font-size:1.3rem;font-weight:900}
+
+/* panel views (upload / profile) */
+.pf-panel-scroll{height:100%;overflow-y:auto;padding:20px}
+.pf-inner{max-width:520px;margin:0 auto}
+.pf-card2{background:var(--panel);border:1px solid rgba(255,255,255,.07);border-radius:16px;padding:20px;margin-bottom:16px}
+.pf-card2 h2{font-size:1rem;font-weight:800;margin-bottom:6px}
+.pf-card2 .sub{color:var(--muted);font-size:.8rem;margin-bottom:16px}
+.pf-file-input{width:100%;padding:14px;border:1px dashed rgba(255,255,255,.25);border-radius:10px;color:var(--muted);font-size:.82rem;margin-bottom:14px;background:#0d0d15}
+#up-preview-wrap video{width:100%;max-height:360px;border-radius:12px;margin-bottom:14px;background:#000}
+.pf-train-btn,#up-post-btn{width:100%;padding:13px;border-radius:11px;background:linear-gradient(90deg,var(--accent),var(--accent2));color:#0a0a12;font-weight:900;font-size:.9rem}
+#up-post-btn:disabled{opacity:.4;cursor:not-allowed}
+
+/* profile */
+.pf-profile-head{text-align:center;padding:10px 0 20px}
+.pf-avatar-big{width:84px;height:84px;border-radius:50%;background:var(--panel2);font-size:2.4rem;display:flex;align-items:center;justify-content:center;margin:0 auto 12px}
+.pf-profile-name{font-weight:800;font-size:1.1rem;margin-bottom:14px}
+.pf-profile-stats{display:flex;justify-content:center;gap:28px;margin-bottom:16px}
+.pf-profile-stats div{display:flex;flex-direction:column;align-items:center}
+.pf-profile-stats b{font-size:1.05rem}
+.pf-profile-stats span{color:var(--muted);font-size:.68rem;letter-spacing:.5px}
+.pf-profile-tabs{display:flex;gap:4px;background:var(--panel2);border-radius:10px;padding:3px;margin-bottom:14px;max-width:280px;margin-left:auto;margin-right:auto}
+.pf-ptab{flex:1;padding:8px 10px;border-radius:8px;font-size:.78rem;font-weight:800;color:var(--muted)}
+.pf-ptab.on{background:linear-gradient(90deg,var(--accent),var(--accent2));color:#0a0a12}
+.pf-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.pf-grid-tile{position:relative;aspect-ratio:9/16;background:#000;border-radius:8px;overflow:hidden}
+.pf-grid-tile video,.pf-grid-tile canvas{width:100%;height:100%;object-fit:cover}
+.pf-grid-cap{position:absolute;left:4px;bottom:4px;font-size:.62rem;font-weight:800;background:rgba(0,0,0,.5);padding:2px 6px;border-radius:6px}
+.pf-grid-del{position:absolute;top:4px;right:4px;background:rgba(0,0,0,.6);color:#f87171;border-radius:50%;width:22px;height:22px;font-size:.7rem;font-weight:900}
+.pf-edit-form{background:var(--panel2);border-radius:12px;padding:14px;margin-bottom:16px;text-align:left}
+
+/* comment drawer */
+.pf-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:20}
+.pf-drawer{position:fixed;left:0;right:0;bottom:0;height:62vh;max-height:640px;background:#111119;border-radius:16px 16px 0 0;z-index:21;display:flex;flex-direction:column;transform:translateY(100%);transition:transform .25s ease}
+.pf-drawer.open{transform:translateY(0)}
+.pf-drawer-handle{width:40px;height:4px;background:rgba(255,255,255,.25);border-radius:2px;margin:10px auto}
+.pf-drawer-title{text-align:center;font-weight:800;font-size:.86rem;padding-bottom:10px;border-bottom:1px solid rgba(255,255,255,.08)}
+.pf-drawer-list{flex:1;overflow-y:auto;padding:10px 16px}
+.pf-comment-row{display:flex;gap:10px;margin-bottom:14px;font-size:.82rem}
+.pf-comment-row .av{font-size:1.2rem}
+.pf-comment-row .user{font-weight:800;color:var(--muted);margin-right:6px}
+.pf-drawer-input-row{display:flex;gap:8px;padding:10px 14px;border-top:1px solid rgba(255,255,255,.08)}
+.pf-drawer-input-row input{flex:1;background:#0d0d15;border:1px solid rgba(255,255,255,.14);border-radius:20px;padding:9px 14px;font-size:.84rem;outline:none}
+.pf-drawer-input-row button{padding:0 16px;font-weight:800;color:var(--accent2);font-size:.84rem}
+
+.pf-toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%) translateY(20px);background:rgba(20,20,30,.95);border:1px solid rgba(255,255,255,.1);color:#fff;padding:9px 18px;border-radius:999px;font-size:.8rem;font-weight:700;z-index:30;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s}
+.pf-toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
