@@ -88,14 +88,20 @@ let tool = 'move';
 let undoStack = [];
 let dirty = false;
 let autosaveTimer = 0;
-const PLUS = window.GXPlus;
+const CREDITS = window.GXCredits;
 const IS_PRO = new URLSearchParams(location.search).get('pro') === '1';
-let proMode = IS_PRO && PLUS && PLUS.isActive();   // Gam+ "GX Studio Pro"
-const FREE_PART_CAP = 40;
-function requirePro(feature) {
-  if (proMode) return true;
-  if (PLUS) PLUS.showUpgrade({ feature, onActivate: () => location.reload() });
-  return false;
+const proMode = IS_PRO;            // GX Studio Pro is free — the FX are metered
+const FX_COST = 20;                // credits spent per particle emitter / FX add
+function refreshCreditBadge() {
+  const b = document.querySelector('.st-logo .gxc-badge');
+  if (b && CREDITS) b.textContent = '⚡ ' + CREDITS.balance();
+}
+/* charge FX_COST for a powerful-engine action; pops the top-up modal if broke */
+function chargeFX(feature) {
+  if (!CREDITS) return true;
+  const ok = CREDITS.trySpend(FX_COST, feature, refreshCreditBadge);
+  refreshCreditBadge();
+  return ok;
 }
 
 /* ------------------------------------------------------------------ */
@@ -326,7 +332,7 @@ function renderInspectorEntity() {
   if (!e.light) missing.push(['light', '💡 Light']);
   if (!e.camera) missing.push(['camera', '🎥 Camera']);
   if (!e.rigidbody) missing.push(['rigidbody', '⚙️ RigidBody']);
-  if (!e.particles) missing.push(['particles', '✨ Particles' + (proMode ? '' : ' (Gam+)')]);
+  if (!e.particles) missing.push(['particles', '✨ Particles (⚡' + FX_COST + ')']);
   if (missing.length) {
     html += `<div class="st-addcomp">${missing.map(([k, l]) => `<button data-addcomp="${k}">+ ${l}</button>`).join('')}</div>`;
   }
@@ -397,7 +403,7 @@ function rigidbodySection(e) {
 function particleSection(e) {
   const p = e.particles;
   const sld = (id, lbl, min, max, step, v) => `<div class="st-field"><label>${lbl}</label><div class="st-slider-row"><input class="st-input" type="range" min="${min}" max="${max}" step="${step}" id="${id}" value="${v}"><span class="val">${v}</span></div></div>`;
-  return `<div class="st-group"><div class="st-group-head"><b>✨ PARTICLES <span style="color:#f5b301">GAM+</span></b><button data-removecomp="particles">✕</button></div>
+  return `<div class="st-group"><div class="st-group-head"><b>✨ PARTICLES <span style="color:#f5b301">FX</span></b><button data-removecomp="particles">✕</button></div>
     <div class="st-field"><label>COLOR START</label><input class="st-input" type="color" id="f-pt-color" value="${p.color}"></div>
     <div class="st-field"><label>COLOR END</label><input class="st-input" type="color" id="f-pt-color2" value="${p.color2}"></div>
     ${sld('f-pt-rate', 'RATE (/sec)', 5, 200, 5, p.rate)}
@@ -560,7 +566,7 @@ function wireEntityInspector(e, rec) {
     if (kind === 'light') e.light = GXS.newEntity('light').light;
     if (kind === 'camera') e.camera = GXS.newEntity('camera').camera;
     if (kind === 'rigidbody') e.rigidbody = { mass: 1, shape: 'box', friction: 0.4, restitution: 0.1, fixedRotation: false, isTrigger: false, linearDamping: 0.05 };
-    if (kind === 'particles') { if (!requirePro('Particle FX')) return; e.particles = GXS.defaultParticles(); }
+    if (kind === 'particles') { if (!chargeFX('Particle FX')) return; e.particles = GXS.defaultParticles(); }
     markDirty(); rebuildViewport(); renderInspectorEntity();
   }));
   panel.querySelectorAll('[data-removecomp]').forEach(btn => btn.addEventListener('click', () => {
@@ -663,11 +669,7 @@ function rebuildViewport() {
 
 function countParts() { return allEntitiesFlat().length; }
 function addEntity(key) {
-  if (key === 'emitter' && !requirePro('Particle Emitter')) return;
-  if (!proMode && countParts() >= FREE_PART_CAP) {
-    if (PLUS) PLUS.showUpgrade({ feature: 'Bigger builds (past ' + FREE_PART_CAP + ' objects)', onActivate: () => location.reload() });
-    return;
-  }
+  if (key === 'emitter' && !chargeFX('Particle Emitter')) return;
   const entity = GXS.PREFABS[key]();
   const sel = selectedId && findWithParent(selectedId);
   if (sel && entityKind(sel.entity) === 'empty') sel.entity.children.push(entity);
@@ -956,7 +958,7 @@ $('btn-add').addEventListener('click', () => {
     ${cat('LIGHTING', [['dirlight', 'Sun (Directional)', '☀️'], ['pointlight', 'Point Light', '💡'], ['spotlight', 'Spot Light', '🔦'], ['ambient', 'Ambient', '🌫️']])}
     ${cat('CAMERA', [['camera', 'Camera', '🎥'], ['camerafollow', 'Follow Camera', '🎬']])}
     ${cat('GAMEPLAY PREFABS', [['coin', 'Coin Pickup', '🪙'], ['enemy', 'Patrol Enemy', '🔺'], ['platform', 'Moving Platform', '🟪'], ['winzone', 'Win Zone', '🏁'], ['crate', 'Physics Crate', '📦'], ['player', 'Scripted Player', '🔵']])}
-    ${cat('FX — GAM+ 👑', [['emitter', 'Particle Emitter' + (proMode ? '' : ' 🔒'), '✨']])}
+    ${cat('FX — POWERFUL ENGINE ⚡' + FX_COST, [['emitter', 'Particle Emitter', '✨']])}
     <div class="st-modal-buttons"><button class="st-btn" data-x>CANCEL</button></div>`);
   document.querySelectorAll('[data-add]').forEach(b => b.addEventListener('click', () => addEntity(b.dataset.add)));
 });
@@ -1009,16 +1011,14 @@ function boot() {
 
   $('title-input').value = project.title || '';
 
-  // Gam+ "GX Studio Pro" boot behaviour
-  if (IS_PRO && PLUS) {
-    if (proMode) {
-      document.title = 'GX Studio Pro — GamingX';
-      const logo = document.querySelector('.st-logo');
-      if (logo && !logo.querySelector('.gxp-badge')) {
-        logo.insertAdjacentHTML('beforeend', ' ' + PLUS.badgeHTML());
-      }
-    } else {
-      PLUS.showUpgrade({ feature: 'GX Studio Pro', onActivate: () => location.reload() });
+  // GX Studio Pro — free, but the powerful FX are metered by credits.
+  if (proMode && CREDITS) {
+    document.title = 'GX Studio Pro — GamingX';
+    const logo = document.querySelector('.st-logo');
+    if (logo && !logo.querySelector('.gxc-badge')) {
+      logo.insertAdjacentHTML('beforeend', ' ' + CREDITS.badgeHTML());
+      const badge = logo.querySelector('.gxc-badge');
+      if (badge) badge.addEventListener('click', () => CREDITS.showWallet({ onChange: refreshCreditBadge }));
     }
   }
 
