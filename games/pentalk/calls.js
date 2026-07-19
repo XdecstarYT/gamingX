@@ -166,14 +166,22 @@ function injectCss() {
   if (_css) return; _css = true;
   const s = document.createElement('style');
   s.textContent = `
-  .ptc-incoming{position:fixed;top:16px;left:50%;transform:translateX(-50%) translateY(-30px);z-index:100001;display:flex;align-items:center;gap:12px;
-    background:rgba(20,20,30,.96);backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,.16);border-radius:16px;padding:12px 16px;
-    box-shadow:0 18px 44px rgba(0,0,0,.55);opacity:0;transition:opacity .25s,transform .25s;font-family:'Segoe UI',system-ui,sans-serif;color:#f5f5fa;max-width:min(440px,94vw)}
-  .ptc-incoming.show{opacity:1;transform:translateX(-50%) translateY(0)}
-  .ptc-incoming .av{width:44px;height:44px;border-radius:50%;background:#20202c;display:flex;align-items:center;justify-content:center;font-size:1.5rem;flex-shrink:0}
-  .ptc-incoming .tt{font-weight:800;font-size:.9rem}.ptc-incoming .sb{color:#9a9aad;font-size:.76rem}
-  .ptc-incoming button{border:none;border-radius:999px;font-weight:800;font-size:.82rem;padding:9px 15px;cursor:pointer}
-  .ptc-acc{background:#22c55e;color:#04120a}.ptc-dec{background:#ef4444;color:#fff}
+  .ptc-incoming{position:fixed;inset:0;z-index:100001;display:flex;flex-direction:column;align-items:center;justify-content:space-between;
+    background:radial-gradient(120% 80% at 50% 0%, #1b2a4a, #07070c 72%);padding:9vh 24px calc(8vh + env(safe-area-inset-bottom));
+    opacity:0;transition:opacity .25s;font-family:'Segoe UI',system-ui,sans-serif;color:#fff}
+  .ptc-incoming.show{opacity:1}
+  .ptc-incoming .who{display:flex;flex-direction:column;align-items:center;gap:16px;margin-top:6vh}
+  .ptc-incoming .av{width:124px;height:124px;border-radius:50%;background:#20202c;display:flex;align-items:center;justify-content:center;font-size:4.2rem;animation:ptc-pulse 1.7s ease-in-out infinite}
+  @keyframes ptc-pulse{0%,100%{box-shadow:0 0 0 0 rgba(120,180,255,.35)}50%{box-shadow:0 0 0 26px rgba(120,180,255,0)}}
+  .ptc-incoming .nm{font-size:1.7rem;font-weight:800}
+  .ptc-incoming .sb{color:#cbd5e1;font-size:.95rem}
+  .ptc-incoming .acts{display:flex;gap:64px;align-items:center}
+  .ptc-incoming .rbtn{display:flex;flex-direction:column;align-items:center;gap:9px;font-size:.8rem;color:#fff;background:none;border:none;cursor:pointer}
+  .ptc-incoming .circ{width:72px;height:72px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.9rem;box-shadow:0 10px 26px rgba(0,0,0,.45)}
+  .ptc-incoming .acc .circ{background:#22c55e}
+  .ptc-incoming .dec .circ{background:#ef4444}
+  .ptc-incoming .acc{animation:ptc-bob 1.2s ease-in-out infinite}
+  @keyframes ptc-bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
   .ptc-screen{position:fixed;inset:0;z-index:100000;background:#07070c;display:none;flex-direction:column;font-family:'Segoe UI',system-ui,sans-serif;color:#fff}
   .ptc-screen.on{display:flex}
   .ptc-stage{flex:1;position:relative;overflow:hidden;background:#0a0a12;display:flex;align-items:center;justify-content:center}
@@ -192,9 +200,13 @@ function injectCss() {
 function showIncomingUi(p) {
   hideIncomingUi();
   const el = document.createElement('div'); el.className = 'ptc-incoming'; el.id = 'ptc-incoming';
-  el.innerHTML = `<div class="av">${p.fromAvatar || '👤'}</div>
-    <div style="flex:1;min-width:0"><div class="tt">${(p.fromName || 'Someone')}</div><div class="sb">Incoming ${p.media === 'video' ? 'video' : 'voice'} call…</div></div>
-    <button class="ptc-dec" id="ptc-decline">Decline</button><button class="ptc-acc" id="ptc-accept">Accept</button>`;
+  el.innerHTML = `<div class="who"><div class="av">${p.fromAvatar || '👤'}</div>
+      <div class="nm">${(p.fromName || 'Someone')}</div>
+      <div class="sb">Incoming ${p.media === 'video' ? 'video' : 'voice'} call…</div></div>
+    <div class="acts">
+      <button class="rbtn dec" id="ptc-decline"><span class="circ">✕</span>Decline</button>
+      <button class="rbtn acc" id="ptc-accept"><span class="circ">${p.media === 'video' ? '🎥' : '📞'}</span>Accept</button>
+    </div>`;
   document.body.appendChild(el);
   requestAnimationFrame(() => el.classList.add('show'));
   document.getElementById('ptc-accept').onclick = accept;
