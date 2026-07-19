@@ -10,121 +10,219 @@
   *{box-sizing:border-box}
   body{margin:0;min-height:100vh;background:radial-gradient(circle at 20% 10%,#1a1330,#0b0a17 60%);
     color:#eef1fa;font-family:'Segoe UI',system-ui,-apple-system,Roboto,Arial,sans-serif;
-    display:flex;align-items:flex-start;justify-content:center;padding:32px 16px}
-  .wrap{width:min(560px,96vw)}
+    display:flex;align-items:flex-start;justify-content:center;padding:28px 16px}
+  .wrap{width:min(640px,96vw)}
   a.back{color:#9aa3bd;text-decoration:none;font-weight:700;font-size:.85rem}
-  .card{background:#121627;border:1px solid rgba(255,255,255,.1);border-radius:20px;padding:26px;margin-top:14px;
+  .card{background:#121627;border:1px solid rgba(255,255,255,.1);border-radius:20px;padding:24px;margin-top:14px;
     box-shadow:0 30px 80px rgba(0,0,0,.5)}
   h1{margin:0 0 2px;font-size:1.7rem;font-weight:900}
   h1 span{background:linear-gradient(90deg,#f5b301,#ff8a3c);-webkit-background-clip:text;background-clip:text;color:transparent}
-  .sub{color:#9aa3bd;font-size:.9rem;margin-bottom:18px}
-  label{display:block;font-size:.72rem;font-weight:800;letter-spacing:.5px;color:#9aa3bd;margin:14px 0 6px;text-transform:uppercase}
-  input{width:100%;padding:12px;border-radius:11px;border:1px solid rgba(255,255,255,.14);
-    background:rgba(255,255,255,.05);color:#eef1fa;font-weight:700;font-size:.95rem}
+  h3{margin:0 0 4px;font-size:1.05rem}
+  .sub{color:#9aa3bd;font-size:.9rem;margin-bottom:14px}
+  label{display:block;font-size:.7rem;font-weight:800;letter-spacing:.5px;color:#9aa3bd;margin:12px 0 6px;text-transform:uppercase}
+  input,select{width:100%;padding:11px;border-radius:10px;border:1px solid rgba(255,255,255,.14);
+    background:rgba(255,255,255,.05);color:#eef1fa;font-weight:700;font-size:.9rem}
   .row{display:flex;gap:10px;align-items:flex-end}
   .row>div{flex:1}
-  button{padding:12px 16px;border-radius:11px;font-weight:800;font-size:.9rem;border:none;cursor:pointer;
+  button{padding:11px 15px;border-radius:10px;font-weight:800;font-size:.88rem;border:none;cursor:pointer;
     background:linear-gradient(90deg,#f5b301,#ff8a3c);color:#241a00;white-space:nowrap}
   button.ghost{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);color:#eef1fa}
-  .out{margin-top:14px;padding:14px;border-radius:12px;background:rgba(245,179,1,.08);border:1px dashed rgba(245,179,1,.35);
-    font-family:ui-monospace,Menlo,Consolas,monospace;font-weight:800;font-size:1.05rem;word-break:break-all;display:none}
-  .hint{font-size:.78rem;color:#9aa3bd;line-height:1.5;margin-top:8px}
+  .out{margin-top:12px;padding:13px;border-radius:12px;background:rgba(245,179,1,.08);border:1px dashed rgba(245,179,1,.35);
+    font-family:ui-monospace,Menlo,Consolas,monospace;font-weight:800;font-size:1.02rem;word-break:break-all;display:none}
+  .hint{font-size:.78rem;color:#9aa3bd;line-height:1.5;margin-top:6px}
   .status{min-height:18px;font-size:.82rem;font-weight:700;margin-top:8px}
   .status.ok{color:#34d399}.status.err{color:#f87171}
-  .bal{font-weight:900;color:#f5b301;font-size:1.1rem}
-  .note{margin-top:18px;font-size:.7rem;line-height:1.5;color:#9aa3bd;background:rgba(255,255,255,.04);
-    border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:12px}
+  .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:6px 0 4px}
+  .stat{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:12px;text-align:center}
+  .stat .n{font-size:1.4rem;font-weight:900;color:#f5b301}
+  .stat .l{font-size:.66rem;color:#9aa3bd;text-transform:uppercase;letter-spacing:.5px;margin-top:2px}
+  .price-row{display:flex;gap:8px;align-items:center;margin-bottom:8px}
+  .price-row .k{flex:1;font-size:.82rem}
+  .price-row .k b{display:block}.price-row .k span{color:#9aa3bd;font-size:.72rem}
+  .price-row input{width:80px;flex:none}
+  hr{border:none;border-top:1px solid rgba(255,255,255,.08);margin:20px 0}
   .hidden{display:none}
-  hr{border:none;border-top:1px solid rgba(255,255,255,.08);margin:22px 0}
+  .modetag{display:inline-block;font-size:.66rem;font-weight:800;padding:3px 9px;border-radius:999px;margin-left:8px;
+    background:rgba(52,211,153,.15);color:#34d399}
+  .modetag.local{background:rgba(245,179,1,.15);color:#f5b301}
 </style>
 </head>
 <body>
 <div class="wrap">
   <a class="back" href="../index.html">← GAMINGX</a>
 
-  <!-- LOCK -->
-  <div class="card" id="lock">
+  <!-- GATE -->
+  <div class="card" id="gate">
     <h1>🛠️ Dev <span>Hub</span></h1>
-    <div class="sub">Mint credit codes for GX Studio Pro's powerful engine. Dev-only.</div>
-    <label>Dev passcode</label>
-    <div class="row">
-      <div><input id="pass" type="password" placeholder="Enter your dev passcode" spellcheck="false"></div>
-      <button id="unlock">Unlock</button>
-    </div>
-    <div class="status err" id="lock-status"></div>
-    <div class="note">The passcode is set in <code>assets/js/gx-credits.js</code> (<code>DEV_KEY</code>). Change it there and keep it private. This is client-side, so treat it as a lock on a screen door, not a bank vault.</div>
+    <div class="sub" id="gate-sub">Loading…</div>
+    <div id="gate-body"></div>
+    <div class="status err" id="gate-status"></div>
   </div>
 
-  <!-- PANEL -->
-  <div class="card hidden" id="panel">
-    <h1>🛠️ Dev <span>Hub</span></h1>
-    <div class="sub">This device's balance: <span class="bal" id="bal">–</span> credits</div>
+  <!-- CONSOLE -->
+  <div class="card hidden" id="console">
+    <h1>🛠️ Dev <span>Hub</span><span class="modetag" id="modetag">online</span></h1>
+    <div class="sub" id="console-sub"></div>
 
-    <h3 style="margin:0 0 2px">🎟️ Generate a code to email</h3>
-    <div class="hint">Make a code, then paste it into your reply to the person who emailed <b id="email"></b>. Each code works once, on whatever device redeems it first.</div>
-    <label>Credits to grant</label>
-    <div class="row">
-      <div><input id="amount" type="number" min="1" value="200"></div>
-      <button id="gen">Generate code</button>
-    </div>
-    <div class="out" id="code"></div>
-    <button class="ghost hidden" id="copy" style="margin-top:10px;width:100%">Copy code</button>
+    <div class="stats" id="stats"></div>
 
     <hr>
-
-    <h3 style="margin:0 0 2px">➕ Add to THIS device</h3>
-    <div class="hint">If you're physically on someone's device, you can top them up directly — or redeem a code here.</div>
-    <label>Redeem a code</label>
+    <h3>💲 Pricing per token</h3>
+    <div class="hint">How many credits each powerful-engine action costs. Changes apply to everyone instantly.</div>
+    <div id="pricing" style="margin-top:12px"></div>
+    <label>Add / edit a token</label>
     <div class="row">
-      <div><input id="redeem-code" placeholder="GX-..." spellcheck="false"></div>
-      <button id="redeem">Redeem</button>
+      <div><input id="pk-key" placeholder="key e.g. studio.fx"></div>
+      <div><input id="pk-label" placeholder="label"></div>
+      <div style="flex:none"><input id="pk-credits" type="number" min="0" value="20" style="width:80px"></div>
+      <button id="pk-save">Save</button>
     </div>
-    <div class="row" style="margin-top:10px">
-      <div><input id="direct" type="number" min="1" value="100" placeholder="Amount"></div>
-      <button class="ghost" id="add-direct">Add directly</button>
-    </div>
-    <div class="status" id="panel-status"></div>
 
-    <div class="note">⚠️ Honest limits: credits live in each device's <code>localStorage</code>. Codes are signed with a secret in <code>gx-credits.js</code>, so casual users can't forge them — but anyone who reads the JS could. There's no server, so balances can also be edited in devtools. For real, tamper-proof metering you'd need a backend that owns the balance.</div>
+    <hr>
+    <h3>🎟️ Mint a credit code</h3>
+    <div class="hint">Generate a code to email to whoever asked for more credits. Single-use.</div>
+    <div class="row" style="margin-top:10px">
+      <div><input id="mint-amt" type="number" min="1" value="200"></div>
+      <div><input id="mint-note" placeholder="note (optional)"></div>
+      <button id="mint-go">Generate</button>
+    </div>
+    <div class="out" id="mint-out"></div>
+
+    <hr>
+    <h3>➕ Grant credits to a user</h3>
+    <div class="row" style="margin-top:10px">
+      <div><input id="grant-user" placeholder="username"></div>
+      <div style="flex:none"><input id="grant-amt" type="number" value="200" style="width:100px"></div>
+      <button id="grant-go">Grant</button>
+    </div>
+
+    <hr>
+    <h3>📣 Push an update</h3>
+    <div class="hint">Posts an in-app announcement banner. Tick “also send push” to notify devices (needs the gx-broadcast-push function deployed).</div>
+    <label>Title</label><input id="bc-title" placeholder="New engine update">
+    <label>Message</label><input id="bc-body" placeholder="Particle bursts are live!">
+    <div class="row" style="margin-top:10px">
+      <div><select id="bc-kind"><option value="update">🚀 update</option><option value="news">📣 news</option><option value="alert">⚠️ alert</option></select></div>
+      <div style="flex:none;display:flex;align-items:center;gap:6px;padding-bottom:2px"><input type="checkbox" id="bc-push" style="width:auto"><label style="margin:0">also send push</label></div>
+      <button id="bc-go">Post</button>
+    </div>
+
+    <div class="status" id="console-status"></div>
+    <hr>
+    <button class="ghost" id="signout" style="width:100%">Sign out</button>
   </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="../assets/js/gx-social.js"></script>
 <script src="../assets/js/gx-credits.js"></script>
 <script>
 (() => {
   const $ = id => document.getElementById(id);
-  const C = window.GXCredits;
-  $('email').textContent = C.EMAIL;
+  const C = window.GXCredits, GS = window.GXSocial;
+  const setStatus = (el, msg, ok) => { el.className = 'status ' + (ok ? 'ok' : 'err'); el.textContent = msg; };
 
-  $('unlock').onclick = () => {
-    if (C.checkDevKey($('pass').value)) {
-      $('lock').classList.add('hidden');
-      $('panel').classList.remove('hidden');
-      $('bal').textContent = C.balance();
-    } else {
-      $('lock-status').textContent = 'Wrong passcode.';
-    }
-  };
-  $('pass').addEventListener('keydown', e => { if (e.key === 'Enter') $('unlock').click(); });
+  async function boot() {
+    if (!GS || !GS.available()) return bootLocal();
+    let user = null;
+    try { user = await GS.currentUser(); } catch (e) {}
+    if (!user) return showSignIn();
+    await C.init();
+    if (C.isAdmin()) return openConsole();
+    return showClaim();
+  }
 
-  $('gen').onclick = () => {
-    const amt = Math.max(1, parseInt($('amount').value, 10) || 0);
-    const code = C.makeCode(amt);
-    const out = $('code'); out.style.display = 'block'; out.textContent = code;
-    $('copy').classList.remove('hidden');
-    $('copy').onclick = () => { navigator.clipboard && navigator.clipboard.writeText(code); $('copy').textContent = 'Copied ✓'; setTimeout(() => $('copy').textContent = 'Copy code', 1500); };
-  };
+  function showSignIn() {
+    $('gate-sub').textContent = 'Sign in with your GamingX account to manage credits, pricing and updates.';
+    $('gate-body').innerHTML = '<button id="si">Sign in</button>';
+    $('si').onclick = () => GS.mountAuthGate({ appName: 'Dev Hub', tagline: 'GamingX admin', emoji: '🛠️', accent: '#f5b301', accent2: '#ff8a3c', onAuthed: boot });
+  }
 
-  const st = (msg, ok) => { const s = $('panel-status'); s.className = 'status ' + (ok ? 'ok' : 'err'); s.textContent = msg; };
-  $('redeem').onclick = () => {
-    const r = C.redeem($('redeem-code').value);
-    if (r.ok) { st(`+${r.amount} credits. Balance: ${r.balance}.`, true); $('bal').textContent = r.balance; $('redeem-code').value = ''; }
-    else st(r.error, false);
-  };
-  $('add-direct').onclick = () => {
-    const amt = Math.max(1, parseInt($('direct').value, 10) || 0);
-    const b = C.add(amt); st(`Added ${amt}. Balance: ${b}.`, true); $('bal').textContent = b;
-  };
+  function showClaim() {
+    $('gate-sub').textContent = 'Signed in. Enter the admin claim secret once to become a Dev Hub admin (stored server-side).';
+    $('gate-body').innerHTML = '<label>Admin claim secret</label><div class="row"><div><input id="claim" type="password" placeholder="claim secret"></div><button id="claim-go">Claim admin</button></div>'
+      + '<button class="ghost" id="so2" style="width:100%;margin-top:10px">Sign out</button>';
+    $('claim-go').onclick = async () => {
+      const ok = await C.adminClaim($('claim').value);
+      if (ok) openConsole(); else setStatus($('gate-status'), 'Wrong claim secret.', false);
+    };
+    $('so2').onclick = async () => { await GS.signOut(); location.reload(); };
+  }
+
+  async function openConsole() {
+    $('gate').classList.add('hidden');
+    $('console').classList.remove('hidden');
+    $('modetag').textContent = 'online'; $('modetag').className = 'modetag';
+    $('console-sub').textContent = 'Server-authoritative. Balances live in Supabase and are enforced by RLS.';
+    await renderStats();
+    renderPricing();
+
+    $('pk-save').onclick = async () => {
+      const r = await C.adminSetPrice($('pk-key').value.trim(), $('pk-label').value.trim() || $('pk-key').value.trim(), parseInt($('pk-credits').value, 10) || 0);
+      if (r && r.ok) { setStatus($('console-status'), 'Price saved.', true); renderPricing(); } else setStatus($('console-status'), (r && r.error) || 'Failed.', false);
+    };
+    $('mint-go').onclick = async () => {
+      const r = await C.adminMintCode(parseInt($('mint-amt').value, 10) || 0, $('mint-note').value.trim());
+      if (r && r.ok) { const o = $('mint-out'); o.style.display = 'block'; o.textContent = r.code; setStatus($('console-status'), 'Code minted — email it to the user.', true); }
+      else setStatus($('console-status'), (r && r.error) || 'Failed.', false);
+    };
+    $('grant-go').onclick = async () => {
+      const r = await C.adminGrant($('grant-user').value.trim(), parseInt($('grant-amt').value, 10) || 0, 'devhub');
+      if (r && r.ok) { setStatus($('console-status'), `Granted. ${r.user} now has ${r.balance} credits.`, true); renderStats(); }
+      else setStatus($('console-status'), (r && r.error) || 'Failed.', false);
+    };
+    $('bc-go').onclick = async () => {
+      const title = $('bc-title').value.trim();
+      if (!title) return setStatus($('console-status'), 'Add a title.', false);
+      const r = await C.adminBroadcast(title, $('bc-body').value.trim(), $('bc-kind').value);
+      if (!r || !r.ok) return setStatus($('console-status'), (r && r.error) || 'Failed.', false);
+      let msg = 'Update posted.';
+      if ($('bc-push').checked) {
+        const pr = await C.sendPush(title, $('bc-body').value.trim(), '/index.html');
+        msg += pr && pr.ok ? ` Push sent to ${pr.sent} device(s).` : ` Push failed: ${(pr && pr.error) || 'function not deployed?'}`;
+      }
+      setStatus($('console-status'), msg, true);
+    };
+    $('signout').onclick = async () => { await GS.signOut(); location.reload(); };
+  }
+
+  async function renderStats() {
+    const s = await C.adminStats();
+    if (!s || !s.ok) return;
+    $('stats').innerHTML = [
+      ['users', s.users], ['wallets', s.wallets], ['credits out', s.credits_outstanding],
+      ['codes left', s.codes_unredeemed], ['push subs', s.push_subs], ['updates', s.broadcasts],
+    ].map(([l, n]) => `<div class="stat"><div class="n">${n}</div><div class="l">${l}</div></div>`).join('');
+  }
+  function renderPricing() {
+    const pr = C.prices();
+    const rows = Object.keys(pr).map(k => `<div class="price-row"><div class="k"><b>${pr[k].label}</b><span>${k}</span></div><input type="number" min="0" value="${pr[k].credits}" data-k="${k}"><button data-save="${k}">Set</button></div>`).join('');
+    $('pricing').innerHTML = rows || '<div class="hint">No pricing rows yet.</div>';
+    $('pricing').querySelectorAll('[data-save]').forEach(b => b.onclick = async () => {
+      const k = b.dataset.save, inp = $('pricing').querySelector(`input[data-k="${k}"]`);
+      const r = await C.adminSetPrice(k, pr[k].label, parseInt(inp.value, 10) || 0);
+      if (r && r.ok) { setStatus($('console-status'), `${k} set to ${inp.value} credits.`, true); renderPricing(); } else setStatus($('console-status'), (r && r.error) || 'Failed.', false);
+    });
+  }
+
+  /* ---- OFFLINE fallback: local passcode + local code mint ---- */
+  function bootLocal() {
+    $('gate-sub').innerHTML = 'No backend reachable — <b>offline mode</b>. You can still mint <i>local</i> codes (only valid on the device that redeems them locally).';
+    $('gate-body').innerHTML = '<label>Dev passcode</label><div class="row"><div><input id="pass" type="password" placeholder="dev passcode"></div><button id="unlock">Unlock</button></div>';
+    $('unlock').onclick = () => {
+      if (!C.checkDevKey($('pass').value)) return setStatus($('gate-status'), 'Wrong passcode.', false);
+      $('gate').classList.add('hidden'); $('console').classList.remove('hidden');
+      $('modetag').textContent = 'offline (local)'; $('modetag').className = 'modetag local';
+      $('console-sub').textContent = 'Offline: local honour-system codes only. Pricing/grants/push need the backend.';
+      $('stats').innerHTML = '';
+      ['pricing'].forEach(id => $(id).closest('.card').querySelector('#pricing').innerHTML = '<div class="hint">Backend required.</div>');
+      $('mint-go').onclick = () => { const o = $('mint-out'); o.style.display = 'block'; o.textContent = C.makeCode(parseInt($('mint-amt').value, 10) || 0); };
+      ['pk-save', 'grant-go', 'bc-go'].forEach(id => { $(id).disabled = true; $(id).style.opacity = .5; });
+      $('signout').classList.add('hidden');
+    };
+  }
+
+  boot();
 })();
 </script>
 </body>

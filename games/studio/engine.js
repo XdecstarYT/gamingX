@@ -61,8 +61,10 @@ function newEntity(kind, name) {
   };
 }
 function defaultParticles() {
-  return { color: '#ffcc44', color2: '#ff5470', size: 0.35, rate: 45, life: 1.4, speed: 3.2, spread: 0.7, gravity: -3, additive: true };
+  return { shape: 'cone', color: '#ffcc44', color2: '#ff5470', size: 0.35, rate: 45, life: 1.4,
+           speed: 3.2, spread: 0.7, gravity: -3, drag: 0, turbulence: 0, burst: false, additive: true };
 }
+const PARTICLE_SHAPES = ['cone', 'sphere', 'box', 'fountain'];
 
 const PREFABS = {
   cube: () => { const e = newEntity('mesh', 'Cube'); return e; },
@@ -551,23 +553,47 @@ class Runtime {
   }
   _spawnParticle(p, i) {
     const c = p.cfg;
-    p.pos[i] = [0, 0, 0];
-    const a = Math.random() * Math.PI * 2, up = 0.5 + Math.random() * 0.5;
-    const sp = c.spread;
-    p.vel[i] = [Math.cos(a) * sp * (Math.random()), up * c.speed, Math.sin(a) * sp * (Math.random())];
-    // bias upward speed
-    p.vel[i][0] *= c.speed * 0.4; p.vel[i][2] *= c.speed * 0.4;
+    const shape = c.shape || 'cone';
+    // emission origin
+    if (shape === 'box') {
+      const s = c.spread;
+      p.pos[i] = [(Math.random() - 0.5) * s * 2, 0, (Math.random() - 0.5) * s * 2];
+    } else {
+      p.pos[i] = [0, 0, 0];
+    }
+    // emission direction
+    let dir;
+    if (shape === 'sphere') {
+      const u = Math.random() * 2 - 1, th = Math.random() * Math.PI * 2, r = Math.sqrt(1 - u * u);
+      dir = [r * Math.cos(th), u, r * Math.sin(th)];
+    } else if (shape === 'fountain') {
+      const a = Math.random() * Math.PI * 2, rad = Math.random() * c.spread * 0.35;
+      dir = [Math.cos(a) * rad, 1, Math.sin(a) * rad];
+    } else { // cone / box -> upward cone widened by spread
+      const a = Math.random() * Math.PI * 2, rad = Math.random() * c.spread;
+      dir = [Math.cos(a) * rad, 1, Math.sin(a) * rad];
+    }
+    const len = Math.hypot(dir[0], dir[1], dir[2]) || 1;
+    const sp = c.speed * (0.7 + Math.random() * 0.6);
+    p.vel[i] = [dir[0] / len * sp, dir[1] / len * sp, dir[2] / len * sp];
     p.age[i] = 0; p.life[i] = c.life * (0.7 + Math.random() * 0.6);
   }
   _updateParticles(dt) {
     if (!this.entities) return;
+    const tmp = new THREE.Color();
     for (const rec of this.entities.values()) {
       const p = rec.particles; if (!p) continue;
       const c = p.cfg;
-      p.acc += dt * c.rate;
-      let toSpawn = Math.floor(p.acc); p.acc -= toSpawn;
+      let toSpawn;
+      if (c.burst) {
+        p.burstTimer = (p.burstTimer == null ? 0 : p.burstTimer) - dt;
+        if (p.burstTimer <= 0) { toSpawn = p.cap; p.burstTimer = c.life; } else { toSpawn = 0; }
+      } else {
+        p.acc += dt * c.rate;
+        toSpawn = Math.floor(p.acc); p.acc -= toSpawn;
+      }
       const posAttr = p.geo.attributes.position.array, colAttr = p.geo.attributes.color.array;
-      const tmp = new THREE.Color();
+      const drag = c.drag ? Math.max(0, 1 - c.drag * dt) : 1;
       for (let i = 0; i < p.cap; i++) {
         if (p.age[i] >= p.life[i]) {
           if (toSpawn > 0) { this._spawnParticle(p, i); toSpawn--; }
@@ -576,6 +602,8 @@ class Runtime {
         p.age[i] += dt;
         const v = p.vel[i], po = p.pos[i];
         v[1] += c.gravity * dt;
+        if (c.turbulence) { const tb = c.turbulence * dt; v[0] += (Math.random() - 0.5) * tb; v[1] += (Math.random() - 0.5) * tb; v[2] += (Math.random() - 0.5) * tb; }
+        if (drag !== 1) { v[0] *= drag; v[1] *= drag; v[2] *= drag; }
         po[0] += v[0] * dt; po[1] += v[1] * dt; po[2] += v[2] * dt;
         const t = Math.min(1, p.age[i] / p.life[i]);
         posAttr[i * 3] = po[0]; posAttr[i * 3 + 1] = po[1]; posAttr[i * 3 + 2] = po[2];
@@ -1041,6 +1069,6 @@ function validateScene(scene) {
 window.GXStudio = {
   newEntity, newScene, defaultSettings, PREFABS, SCRIPT_LIB,
   buildGeometry, buildMaterial, Runtime, cloneEntity, validateScene, uid,
-  MATERIALS, MATERIAL_ORDER, defaultParticles,
+  MATERIALS, MATERIAL_ORDER, defaultParticles, PARTICLE_SHAPES,
 };
 })();

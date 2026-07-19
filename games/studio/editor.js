@@ -91,15 +91,15 @@ let autosaveTimer = 0;
 const CREDITS = window.GXCredits;
 const IS_PRO = new URLSearchParams(location.search).get('pro') === '1';
 const proMode = IS_PRO;            // GX Studio Pro is free — the FX are metered
-const FX_COST = 20;                // credits spent per particle emitter / FX add
+function fxCost(key) { return CREDITS ? CREDITS.priceOf(key) : 20; }
 function refreshCreditBadge() {
   const b = document.querySelector('.st-logo .gxc-badge');
   if (b && CREDITS) b.textContent = '⚡ ' + CREDITS.balance();
 }
-/* charge FX_COST for a powerful-engine action; pops the top-up modal if broke */
-function chargeFX(feature) {
+/* charge a powerful-engine action against the wallet; pops the top-up modal if broke */
+async function chargeFX(feature, key) {
   if (!CREDITS) return true;
-  const ok = CREDITS.trySpend(FX_COST, feature, refreshCreditBadge);
+  const ok = await CREDITS.trySpend(key, feature, refreshCreditBadge);
   refreshCreditBadge();
   return ok;
 }
@@ -332,7 +332,7 @@ function renderInspectorEntity() {
   if (!e.light) missing.push(['light', '💡 Light']);
   if (!e.camera) missing.push(['camera', '🎥 Camera']);
   if (!e.rigidbody) missing.push(['rigidbody', '⚙️ RigidBody']);
-  if (!e.particles) missing.push(['particles', '✨ Particles (⚡' + FX_COST + ')']);
+  if (!e.particles) missing.push(['particles', '✨ Particles (⚡' + fxCost('studio.fx') + ')']);
   if (missing.length) {
     html += `<div class="st-addcomp">${missing.map(([k, l]) => `<button data-addcomp="${k}">+ ${l}</button>`).join('')}</div>`;
   }
@@ -403,7 +403,11 @@ function rigidbodySection(e) {
 function particleSection(e) {
   const p = e.particles;
   const sld = (id, lbl, min, max, step, v) => `<div class="st-field"><label>${lbl}</label><div class="st-slider-row"><input class="st-input" type="range" min="${min}" max="${max}" step="${step}" id="${id}" value="${v}"><span class="val">${v}</span></div></div>`;
+  const shapes = (GXS.PARTICLE_SHAPES || ['cone', 'sphere', 'box', 'fountain']);
+  const cur = p.shape || 'cone';
   return `<div class="st-group"><div class="st-group-head"><b>✨ PARTICLES <span style="color:#f5b301">FX</span></b><button data-removecomp="particles">✕</button></div>
+    <div class="st-field"><label>EMITTER SHAPE</label>
+      <select class="st-input" id="f-pt-shape">${shapes.map(s => `<option value="${s}" ${cur === s ? 'selected' : ''}>${s}</option>`).join('')}</select></div>
     <div class="st-field"><label>COLOR START</label><input class="st-input" type="color" id="f-pt-color" value="${p.color}"></div>
     <div class="st-field"><label>COLOR END</label><input class="st-input" type="color" id="f-pt-color2" value="${p.color2}"></div>
     ${sld('f-pt-rate', 'RATE (/sec)', 5, 200, 5, p.rate)}
@@ -412,6 +416,9 @@ function particleSection(e) {
     ${sld('f-pt-speed', 'SPEED', 0.5, 12, 0.5, p.speed)}
     ${sld('f-pt-spread', 'SPREAD', 0, 3, 0.1, p.spread)}
     ${sld('f-pt-gravity', 'GRAVITY', -12, 6, 0.5, p.gravity)}
+    ${sld('f-pt-drag', 'DRAG', 0, 5, 0.1, p.drag || 0)}
+    ${sld('f-pt-turbulence', 'TURBULENCE', 0, 20, 0.5, p.turbulence || 0)}
+    <div class="st-field"><label class="st-check"><input type="checkbox" id="f-pt-burst" ${p.burst ? 'checked' : ''}> Burst (fire all at once, loops)</label></div>
     <div class="st-field"><label class="st-check"><input type="checkbox" id="f-pt-additive" ${p.additive ? 'checked' : ''}> Glowing (additive)</label></div>
   </div>`;
 }
@@ -556,17 +563,24 @@ function wireEntityInspector(e, rec) {
     bindPt('f-pt-speed', 'speed');
     bindPt('f-pt-spread', 'spread');
     bindPt('f-pt-gravity', 'gravity');
+    bindPt('f-pt-drag', 'drag');
+    bindPt('f-pt-turbulence', 'turbulence');
+    const shape = panel.querySelector('#f-pt-shape');
+    if (shape) shape.addEventListener('change', () => { e.particles.shape = shape.value; markDirty(); rebuildViewport(); });
+    const burst = panel.querySelector('#f-pt-burst');
+    if (burst) burst.addEventListener('change', () => { e.particles.burst = burst.checked; markDirty(); rebuildViewport(); });
     const add = panel.querySelector('#f-pt-additive');
     if (add) add.addEventListener('change', () => { e.particles.additive = add.checked; markDirty(); rebuildViewport(); });
   }
 
-  panel.querySelectorAll('[data-addcomp]').forEach(btn => btn.addEventListener('click', () => {
+  panel.querySelectorAll('[data-addcomp]').forEach(btn => btn.addEventListener('click', async () => {
     const kind = btn.dataset.addcomp;
+    if (kind === 'particles' && !(await chargeFX('Particle FX', 'studio.fx'))) return;
     if (kind === 'mesh') e.mesh = GXS.newEntity('mesh').mesh;
     if (kind === 'light') e.light = GXS.newEntity('light').light;
     if (kind === 'camera') e.camera = GXS.newEntity('camera').camera;
     if (kind === 'rigidbody') e.rigidbody = { mass: 1, shape: 'box', friction: 0.4, restitution: 0.1, fixedRotation: false, isTrigger: false, linearDamping: 0.05 };
-    if (kind === 'particles') { if (!chargeFX('Particle FX')) return; e.particles = GXS.defaultParticles(); }
+    if (kind === 'particles') e.particles = GXS.defaultParticles();
     markDirty(); rebuildViewport(); renderInspectorEntity();
   }));
   panel.querySelectorAll('[data-removecomp]').forEach(btn => btn.addEventListener('click', () => {
@@ -668,8 +682,8 @@ function rebuildViewport() {
 }
 
 function countParts() { return allEntitiesFlat().length; }
-function addEntity(key) {
-  if (key === 'emitter' && !chargeFX('Particle Emitter')) return;
+async function addEntity(key) {
+  if (key === 'emitter' && !(await chargeFX('Particle Emitter', 'studio.emitter'))) return;
   const entity = GXS.PREFABS[key]();
   const sel = selectedId && findWithParent(selectedId);
   if (sel && entityKind(sel.entity) === 'empty') sel.entity.children.push(entity);
@@ -958,7 +972,7 @@ $('btn-add').addEventListener('click', () => {
     ${cat('LIGHTING', [['dirlight', 'Sun (Directional)', '☀️'], ['pointlight', 'Point Light', '💡'], ['spotlight', 'Spot Light', '🔦'], ['ambient', 'Ambient', '🌫️']])}
     ${cat('CAMERA', [['camera', 'Camera', '🎥'], ['camerafollow', 'Follow Camera', '🎬']])}
     ${cat('GAMEPLAY PREFABS', [['coin', 'Coin Pickup', '🪙'], ['enemy', 'Patrol Enemy', '🔺'], ['platform', 'Moving Platform', '🟪'], ['winzone', 'Win Zone', '🏁'], ['crate', 'Physics Crate', '📦'], ['player', 'Scripted Player', '🔵']])}
-    ${cat('FX — POWERFUL ENGINE ⚡' + FX_COST, [['emitter', 'Particle Emitter', '✨']])}
+    ${cat('FX — POWERFUL ENGINE ⚡' + fxCost('studio.emitter'), [['emitter', 'Particle Emitter', '✨']])}
     <div class="st-modal-buttons"><button class="st-btn" data-x>CANCEL</button></div>`);
   document.querySelectorAll('[data-add]').forEach(b => b.addEventListener('click', () => addEntity(b.dataset.add)));
 });
@@ -1011,23 +1025,33 @@ function boot() {
 
   $('title-input').value = project.title || '';
 
-  // GX Studio Pro — free, but the powerful FX are metered by credits.
-  if (proMode && CREDITS) {
-    document.title = 'GX Studio Pro — GamingX';
-    const logo = document.querySelector('.st-logo');
-    if (logo && !logo.querySelector('.gxc-badge')) {
-      logo.insertAdjacentHTML('beforeend', ' ' + CREDITS.badgeHTML());
-      const badge = logo.querySelector('.gxc-badge');
-      if (badge) badge.addEventListener('click', () => CREDITS.showWallet({ onChange: refreshCreditBadge }));
-    }
-  }
-
   initViewport();
   renderHierarchy();
   selectEntity(null);
   renderInspectorScene();
   // lightweight hooks for automated tests / debugging
   window.__studio = { rt: () => runtime, project: () => project, selected: () => selectedId, select: selectEntity, insert: addEntity };
+
+  // GX Studio Pro — free, but the powerful FX are metered by credits.
+  if (proMode && CREDITS) {
+    document.title = 'GX Studio Pro — GamingX';
+    setupPro();
+  }
+}
+
+/* async: init the wallet (server if signed in, else local), mount the badge,
+   surface any dev broadcasts. */
+async function setupPro() {
+  try { await CREDITS.init(); } catch (e) {}
+  const logo = document.querySelector('.st-logo');
+  if (logo && !logo.querySelector('.gxc-badge')) {
+    logo.insertAdjacentHTML('beforeend', ' ' + CREDITS.badgeHTML());
+    const badge = logo.querySelector('.gxc-badge');
+    if (badge) badge.addEventListener('click', () => CREDITS.showWallet({ onChange: refreshCreditBadge }));
+  }
+  refreshCreditBadge();
+  renderInspectorEntity();       // re-render so labels show live pricing
+  try { CREDITS.showBroadcasts(); } catch (e) {}
 }
 boot();
 })();
