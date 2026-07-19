@@ -580,11 +580,19 @@ class Runtime {
       return { handlers: {}, error: err.message };
     }
   }
+  _compileScript(s) {
+    if (s.lang === 'gamx') {
+      if (!window.GamX) return { handlers: {}, error: 'GamX language not loaded' };
+      try { return this._compile(window.GamX.toJS(s.code)); }
+      catch (e) { return { handlers: {}, error: e.message }; }
+    }
+    return this._compile(s.code);
+  }
   _initScripts() {
     for (const rec of this.entities.values()) {
       for (const s of rec.data.scripts) {
         if (!s.enabled) continue;
-        const compiled = this._compile(s.code);
+        const compiled = this._compileScript(s);
         if (compiled.error) { this.log(rec.data.name, 'compile error: ' + compiled.error, true); continue; }
         const inst = { rec, script: s, handlers: compiled.handlers, api: this._makeApi(rec) };
         rec.scriptInstances.push(inst);
@@ -637,6 +645,7 @@ class Runtime {
         rec.object3d.quaternion.copy(q);
       },
       setVisible: (v) => { rec.object3d.visible = v; },
+      setColor: (hex) => { const mesh = rec.meshObj; if (mesh && mesh.material && mesh.material.color) mesh.material.color.set(hex); },
       destroy: () => self._destroyEntity(rec),
     };
   }
@@ -684,7 +693,7 @@ class Runtime {
         if (self.world) self._addBodyFor(newRec);
         for (const s of newRec.data.scripts) {
           if (!s.enabled) continue;
-          const compiled = self._compile(s.code);
+          const compiled = self._compileScript(s);
           const inst = { rec: newRec, script: s, handlers: compiled.handlers, api: self._makeApi(newRec) };
           newRec.scriptInstances.push(inst);
           if (inst.handlers.onStart) self._safeCall(inst, 'onStart');

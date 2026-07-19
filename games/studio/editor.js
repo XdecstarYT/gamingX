@@ -386,9 +386,14 @@ function rigidbodySection(e) {
 function scriptsSection(e) {
   let html = `<div class="st-group"><div class="st-group-head"><b>📜 SCRIPTS</b></div>`;
   e.scripts.forEach((s, i) => {
+    const lang = s.lang || 'js';
     html += `<div class="st-script" data-script-idx="${i}">
       <div class="st-script-head">
         <input type="text" class="st-input f-script-name" value="${escapeHtml(s.name)}">
+        <select class="st-input f-script-lang" title="Language" style="max-width:96px">
+          <option value="gamx" ${lang === 'gamx' ? 'selected' : ''}>GamX</option>
+          <option value="js" ${lang === 'js' ? 'selected' : ''}>JavaScript</option>
+        </select>
         <label class="st-check" style="font-size:.68rem"><input type="checkbox" class="f-script-enabled" ${s.enabled ? 'checked' : ''}> on</label>
         <button class="btn-remove-script" title="Remove script" style="color:#f87171">✕</button>
       </div>
@@ -397,14 +402,15 @@ function scriptsSection(e) {
     </div>`;
   });
   html += `<div class="st-addcomp">
-    <button data-addscript="blank">+ Blank Script</button>
+    <button data-addscript="gamx">+ GamX Script</button>
+    <button data-addscript="blank">+ JS Script</button>
     <button data-addscript-menu="1">+ From Library</button>
   </div>
   <div class="st-api-hint">
-    <b style="color:var(--text)">Scripting API</b> — inside a script you get an <code>api</code> object:<br>
-    <code>api.entity</code> get/set position, rotation · <code>api.input.isDown(code)</code> / <code>.pressed(code)</code> ·
-    <code>api.velocity.set/add/get</code> (RigidBody) · <code>api.isGrounded()</code> · <code>api.find(name)</code> ·
-    <code>api.distance(handle)</code> · <code>api.score.add(n)</code> · <code>api.end({win,message})</code> · <code>api.log(...)</code> · <code>api.dt</code> <code>api.time</code>
+    <b style="color:var(--text)">GamX</b> — plain-English code. Blocks: <code>when the game starts:</code> · <code>every frame:</code> · <code>when touched:</code> (close with <code>end</code>).<br>
+    Commands: <code>move forward 6</code> · <code>spin 90</code> · <code>jump</code> · <code>say "hi"</code> · <code>make me blue</code> · <code>add 10 to score</code> · <code>win</code> / <code>lose</code> · <code>destroy me</code> · <code>let speed be 5</code>.<br>
+    Ifs: <code>if key "W" is down:</code> · <code>if player is near 2:</code> · <code>if score is 30 or more:</code><br>
+    <span style="color:var(--muted)">Switch a script to <b>JavaScript</b> for the full <code>api</code> (api.entity, api.velocity, api.find, api.dt…).</span>
   </div>
   </div>`;
   return html;
@@ -517,11 +523,17 @@ function wireEntityInspector(e, rec) {
     box.querySelector('.f-script-name').addEventListener('input', ev => { e.scripts[idx].name = ev.target.value; markDirty(); });
     box.querySelector('.f-script-enabled').addEventListener('change', ev => { e.scripts[idx].enabled = ev.target.checked; markDirty(); });
     box.querySelector('.f-script-code').addEventListener('input', ev => { e.scripts[idx].code = ev.target.value; markDirty(); });
+    box.querySelector('.f-script-lang').addEventListener('change', ev => { e.scripts[idx].lang = ev.target.value; markDirty(); });
     box.querySelector('.btn-remove-script').addEventListener('click', () => { e.scripts.splice(idx, 1); markDirty(); renderInspectorEntity(); });
+  });
+  const gamxBtn = panel.querySelector('[data-addscript="gamx"]');
+  if (gamxBtn) gamxBtn.addEventListener('click', () => {
+    e.scripts.push({ id: GXS.uid(), name: 'GamX Script', enabled: true, lang: 'gamx', code: (window.GamX && window.GamX.SAMPLE) || 'every frame:\n  spin 90' });
+    markDirty(); renderInspectorEntity();
   });
   const blankBtn = panel.querySelector('[data-addscript="blank"]');
   if (blankBtn) blankBtn.addEventListener('click', () => {
-    e.scripts.push({ id: GXS.uid(), name: 'New Script', enabled: true, code: GXS.SCRIPT_LIB.blank });
+    e.scripts.push({ id: GXS.uid(), name: 'New Script', enabled: true, lang: 'js', code: GXS.SCRIPT_LIB.blank });
     markDirty(); renderInspectorEntity();
   });
   const libBtn = panel.querySelector('[data-addscript-menu]');
@@ -901,7 +913,7 @@ function showScriptLibraryModal(entity) {
     <div class="st-grid-add">${items.map(([k, l]) => `<button data-lib="${k}"><span class="em">📜</span>${l}</button>`).join('')}</div>
     <div class="st-modal-buttons"><button class="st-btn" data-x>CANCEL</button></div>`);
   document.querySelectorAll('[data-lib]').forEach(b => b.addEventListener('click', () => {
-    entity.scripts.push({ id: GXS.uid(), name: b.textContent.trim(), enabled: true, code: GXS.SCRIPT_LIB[b.dataset.lib] });
+    entity.scripts.push({ id: GXS.uid(), name: b.textContent.trim(), enabled: true, lang: 'js', code: GXS.SCRIPT_LIB[b.dataset.lib] });
     markDirty();
     closeModal();
     renderInspectorEntity();
