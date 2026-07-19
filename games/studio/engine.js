@@ -55,9 +55,13 @@ function newEntity(kind, name) {
     light: kind === 'light' ? { type: 'point', color: '#ffffff', intensity: 1.2, distance: 12, angle: 0.5, penumbra: 0.4, castShadow: false } : null,
     camera: kind === 'camera' ? { fov: 60, isMain: false } : null,
     rigidbody: null,
+    particles: null,
     scripts: [],
     children: [],
   };
+}
+function defaultParticles() {
+  return { color: '#ffcc44', color2: '#ff5470', size: 0.35, rate: 45, life: 1.4, speed: 3.2, spread: 0.7, gravity: -3, additive: true };
 }
 
 const PREFABS = {
@@ -70,6 +74,12 @@ const PREFABS = {
     e.mesh.shape = 'box'; e.mesh.color = '#c9d1ff'; e.mesh.material = 'smoothplastic'; e.mesh.anchored = true; e.mesh.isSpawn = true;
     e.mesh.emissive = '#3b4cff'; e.mesh.emissiveIntensity = 0.4;
     e.transform.scale = [4, 0.4, 4]; e.transform.position = [0, 0.2, 0];
+    return e;
+  },
+  emitter: () => {
+    const e = newEntity('empty', 'Particle Emitter');
+    e.particles = defaultParticles();
+    e.transform.position = [0, 2, 0];
     return e;
   },
   baseplate: () => {
@@ -511,12 +521,70 @@ class Runtime {
       obj.add(cam);
       rec.cameraObj = cam;
     }
+    if (data.particles) rec.particles = this._buildParticles(data.particles, obj);
 
     this.entities.set(data.id, rec);
     if (data.name) this.byName.set(data.name, rec);
     if (data.tag) { if (!this.byTag.has(data.tag)) this.byTag.set(data.tag, []); this.byTag.get(data.tag).push(rec); }
     for (const child of data.children || []) this._buildEntity(child, obj);
     return rec;
+  }
+
+  /* ---------------- particles (Gam+ Pro FX) ---------------- */
+  _buildParticles(cfg, parentObj) {
+    const cap = Math.max(8, Math.ceil(cfg.rate * cfg.life) + 8);
+    const positions = new Float32Array(cap * 3);
+    const colors = new Float32Array(cap * 3);
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+    const mat = new THREE.PointsMaterial({
+      size: cfg.size, vertexColors: true, transparent: true, opacity: 0.95,
+      depthWrite: false, blending: cfg.additive ? THREE.AdditiveBlending : THREE.NormalBlending,
+    });
+    const points = new THREE.Points(geo, mat);
+    points.frustumCulled = false;
+    parentObj.add(points);
+    const p = { cfg, points, geo, cap, pos: [], vel: [], age: [], life: [], acc: 0, c1: new THREE.Color(cfg.color), c2: new THREE.Color(cfg.color2 || cfg.color) };
+    for (let i = 0; i < cap; i++) { p.pos.push([0, 0, 0]); p.vel.push([0, 0, 0]); p.age.push(Infinity); p.life.push(cfg.life); }
+    return p;
+  }
+  _spawnParticle(p, i) {
+    const c = p.cfg;
+    p.pos[i] = [0, 0, 0];
+    const a = Math.random() * Math.PI * 2, up = 0.5 + Math.random() * 0.5;
+    const sp = c.spread;
+    p.vel[i] = [Math.cos(a) * sp * (Math.random()), up * c.speed, Math.sin(a) * sp * (Math.random())];
+    // bias upward speed
+    p.vel[i][0] *= c.speed * 0.4; p.vel[i][2] *= c.speed * 0.4;
+    p.age[i] = 0; p.life[i] = c.life * (0.7 + Math.random() * 0.6);
+  }
+  _updateParticles(dt) {
+    if (!this.entities) return;
+    for (const rec of this.entities.values()) {
+      const p = rec.particles; if (!p) continue;
+      const c = p.cfg;
+      p.acc += dt * c.rate;
+      let toSpawn = Math.floor(p.acc); p.acc -= toSpawn;
+      const posAttr = p.geo.attributes.position.array, colAttr = p.geo.attributes.color.array;
+      const tmp = new THREE.Color();
+      for (let i = 0; i < p.cap; i++) {
+        if (p.age[i] >= p.life[i]) {
+          if (toSpawn > 0) { this._spawnParticle(p, i); toSpawn--; }
+          else { posAttr[i * 3 + 1] = 100000; continue; } // park offscreen
+        }
+        p.age[i] += dt;
+        const v = p.vel[i], po = p.pos[i];
+        v[1] += c.gravity * dt;
+        po[0] += v[0] * dt; po[1] += v[1] * dt; po[2] += v[2] * dt;
+        const t = Math.min(1, p.age[i] / p.life[i]);
+        posAttr[i * 3] = po[0]; posAttr[i * 3 + 1] = po[1]; posAttr[i * 3 + 2] = po[2];
+        tmp.copy(p.c1).lerp(p.c2, t);
+        colAttr[i * 3] = tmp.r; colAttr[i * 3 + 1] = tmp.g; colAttr[i * 3 + 2] = tmp.b;
+      }
+      p.geo.attributes.position.needsUpdate = true;
+      p.geo.attributes.color.needsUpdate = true;
+    }
   }
 
   /* ---------------- physics ---------------- */
@@ -904,6 +972,7 @@ class Runtime {
   step(dt) {
     this._lastDt = dt;
     this.time += dt;
+    this._updateParticles(dt); // particles animate in edit + play so FX preview live
     if (this.playing && this.world) {
       if (this.characterMode) this._stepCharacter(dt);
       this._accum += dt;
@@ -972,6 +1041,6 @@ function validateScene(scene) {
 window.GXStudio = {
   newEntity, newScene, defaultSettings, PREFABS, SCRIPT_LIB,
   buildGeometry, buildMaterial, Runtime, cloneEntity, validateScene, uid,
-  MATERIALS, MATERIAL_ORDER,
+  MATERIALS, MATERIAL_ORDER, defaultParticles,
 };
 })();

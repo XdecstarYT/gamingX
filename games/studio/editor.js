@@ -88,6 +88,15 @@ let tool = 'move';
 let undoStack = [];
 let dirty = false;
 let autosaveTimer = 0;
+const PLUS = window.GXPlus;
+const IS_PRO = new URLSearchParams(location.search).get('pro') === '1';
+let proMode = IS_PRO && PLUS && PLUS.isActive();   // Gam+ "GX Studio Pro"
+const FREE_PART_CAP = 40;
+function requirePro(feature) {
+  if (proMode) return true;
+  if (PLUS) PLUS.showUpgrade({ feature, onActivate: () => location.reload() });
+  return false;
+}
 
 /* ------------------------------------------------------------------ */
 /* entity tree helpers                                                */
@@ -309,6 +318,7 @@ function renderInspectorEntity() {
   if (e.light) html += lightSection(e);
   if (e.camera) html += cameraSection(e);
   if (e.rigidbody) html += rigidbodySection(e);
+  if (e.particles) html += particleSection(e);
   html += scriptsSection(e);
 
   const missing = [];
@@ -316,6 +326,7 @@ function renderInspectorEntity() {
   if (!e.light) missing.push(['light', '💡 Light']);
   if (!e.camera) missing.push(['camera', '🎥 Camera']);
   if (!e.rigidbody) missing.push(['rigidbody', '⚙️ RigidBody']);
+  if (!e.particles) missing.push(['particles', '✨ Particles' + (proMode ? '' : ' (Gam+)')]);
   if (missing.length) {
     html += `<div class="st-addcomp">${missing.map(([k, l]) => `<button data-addcomp="${k}">+ ${l}</button>`).join('')}</div>`;
   }
@@ -381,6 +392,21 @@ function rigidbodySection(e) {
     <div class="st-field"><label>FRICTION</label><div class="st-slider-row"><input class="st-input" type="range" min="0" max="1" step="0.05" id="f-rb-friction" value="${r.friction}"><span class="val">${r.friction}</span></div></div>
     <div class="st-field"><label>BOUNCINESS</label><div class="st-slider-row"><input class="st-input" type="range" min="0" max="1" step="0.05" id="f-rb-restitution" value="${r.restitution}"><span class="val">${r.restitution}</span></div></div>
     <div class="st-field"><label class="st-check"><input type="checkbox" id="f-rb-fixedRotation" ${r.fixedRotation ? 'checked' : ''}> Lock rotation</label></div>
+  </div>`;
+}
+function particleSection(e) {
+  const p = e.particles;
+  const sld = (id, lbl, min, max, step, v) => `<div class="st-field"><label>${lbl}</label><div class="st-slider-row"><input class="st-input" type="range" min="${min}" max="${max}" step="${step}" id="${id}" value="${v}"><span class="val">${v}</span></div></div>`;
+  return `<div class="st-group"><div class="st-group-head"><b>✨ PARTICLES <span style="color:#f5b301">GAM+</span></b><button data-removecomp="particles">✕</button></div>
+    <div class="st-field"><label>COLOR START</label><input class="st-input" type="color" id="f-pt-color" value="${p.color}"></div>
+    <div class="st-field"><label>COLOR END</label><input class="st-input" type="color" id="f-pt-color2" value="${p.color2}"></div>
+    ${sld('f-pt-rate', 'RATE (/sec)', 5, 200, 5, p.rate)}
+    ${sld('f-pt-size', 'SIZE', 0.05, 2, 0.05, p.size)}
+    ${sld('f-pt-life', 'LIFETIME', 0.3, 4, 0.1, p.life)}
+    ${sld('f-pt-speed', 'SPEED', 0.5, 12, 0.5, p.speed)}
+    ${sld('f-pt-spread', 'SPREAD', 0, 3, 0.1, p.spread)}
+    ${sld('f-pt-gravity', 'GRAVITY', -12, 6, 0.5, p.gravity)}
+    <div class="st-field"><label class="st-check"><input type="checkbox" id="f-pt-additive" ${p.additive ? 'checked' : ''}> Glowing (additive)</label></div>
   </div>`;
 }
 function scriptsSection(e) {
@@ -505,12 +531,36 @@ function wireEntityInspector(e, rec) {
     if (fr) fr.addEventListener('change', () => { e.rigidbody.fixedRotation = fr.checked; markDirty(); });
   }
 
+  if (e.particles) {
+    const bindPt = (id, key, isColor) => {
+      const el = panel.querySelector('#' + id);
+      if (!el) return;
+      el.addEventListener('input', () => {
+        e.particles[key] = isColor ? el.value : parseFloat(el.value);
+        const val = el.parentElement.querySelector('.val');
+        if (val) val.textContent = e.particles[key];
+        markDirty(); rebuildViewport();
+      });
+    };
+    bindPt('f-pt-color', 'color', true);
+    bindPt('f-pt-color2', 'color2', true);
+    bindPt('f-pt-rate', 'rate');
+    bindPt('f-pt-size', 'size');
+    bindPt('f-pt-life', 'life');
+    bindPt('f-pt-speed', 'speed');
+    bindPt('f-pt-spread', 'spread');
+    bindPt('f-pt-gravity', 'gravity');
+    const add = panel.querySelector('#f-pt-additive');
+    if (add) add.addEventListener('change', () => { e.particles.additive = add.checked; markDirty(); rebuildViewport(); });
+  }
+
   panel.querySelectorAll('[data-addcomp]').forEach(btn => btn.addEventListener('click', () => {
     const kind = btn.dataset.addcomp;
     if (kind === 'mesh') e.mesh = GXS.newEntity('mesh').mesh;
     if (kind === 'light') e.light = GXS.newEntity('light').light;
     if (kind === 'camera') e.camera = GXS.newEntity('camera').camera;
     if (kind === 'rigidbody') e.rigidbody = { mass: 1, shape: 'box', friction: 0.4, restitution: 0.1, fixedRotation: false, isTrigger: false, linearDamping: 0.05 };
+    if (kind === 'particles') { if (!requirePro('Particle FX')) return; e.particles = GXS.defaultParticles(); }
     markDirty(); rebuildViewport(); renderInspectorEntity();
   }));
   panel.querySelectorAll('[data-removecomp]').forEach(btn => btn.addEventListener('click', () => {
@@ -611,7 +661,13 @@ function rebuildViewport() {
   selectEntity(wasSelected && runtime.entities.has(wasSelected) ? wasSelected : null);
 }
 
+function countParts() { return allEntitiesFlat().length; }
 function addEntity(key) {
+  if (key === 'emitter' && !requirePro('Particle Emitter')) return;
+  if (!proMode && countParts() >= FREE_PART_CAP) {
+    if (PLUS) PLUS.showUpgrade({ feature: 'Bigger builds (past ' + FREE_PART_CAP + ' objects)', onActivate: () => location.reload() });
+    return;
+  }
   const entity = GXS.PREFABS[key]();
   const sel = selectedId && findWithParent(selectedId);
   if (sel && entityKind(sel.entity) === 'empty') sel.entity.children.push(entity);
@@ -900,6 +956,7 @@ $('btn-add').addEventListener('click', () => {
     ${cat('LIGHTING', [['dirlight', 'Sun (Directional)', '☀️'], ['pointlight', 'Point Light', '💡'], ['spotlight', 'Spot Light', '🔦'], ['ambient', 'Ambient', '🌫️']])}
     ${cat('CAMERA', [['camera', 'Camera', '🎥'], ['camerafollow', 'Follow Camera', '🎬']])}
     ${cat('GAMEPLAY PREFABS', [['coin', 'Coin Pickup', '🪙'], ['enemy', 'Patrol Enemy', '🔺'], ['platform', 'Moving Platform', '🟪'], ['winzone', 'Win Zone', '🏁'], ['crate', 'Physics Crate', '📦'], ['player', 'Scripted Player', '🔵']])}
+    ${cat('FX — GAM+ 👑', [['emitter', 'Particle Emitter' + (proMode ? '' : ' 🔒'), '✨']])}
     <div class="st-modal-buttons"><button class="st-btn" data-x>CANCEL</button></div>`);
   document.querySelectorAll('[data-add]').forEach(b => b.addEventListener('click', () => addEntity(b.dataset.add)));
 });
@@ -951,6 +1008,20 @@ function boot() {
   if (!project) project = templateBaseplate();
 
   $('title-input').value = project.title || '';
+
+  // Gam+ "GX Studio Pro" boot behaviour
+  if (IS_PRO && PLUS) {
+    if (proMode) {
+      document.title = 'GX Studio Pro — GamingX';
+      const logo = document.querySelector('.st-logo');
+      if (logo && !logo.querySelector('.gxp-badge')) {
+        logo.insertAdjacentHTML('beforeend', ' ' + PLUS.badgeHTML());
+      }
+    } else {
+      PLUS.showUpgrade({ feature: 'GX Studio Pro', onActivate: () => location.reload() });
+    }
+  }
+
   initViewport();
   renderHierarchy();
   selectEntity(null);
