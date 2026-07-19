@@ -353,13 +353,47 @@ function watch(table, event, filter, handler) {
 function unwatch(ch) { try { client().removeChannel(ch); } catch (e) {} }
 function unwatchAll() { _channels.splice(0).forEach(ch => { try { client().removeChannel(ch); } catch (e) {} }); }
 
-/* Common to every app: ask for permission once, then notify on new followers. */
+/* Common to every app: ask for permission once, register background push,
+   then notify on new followers (live, while open). */
 async function startCommonNotifications(profile) {
   await ensureNotifyPermission();
+  enablePush(profile);
   watch('follows', 'INSERT', `following_id=eq.${profile.id}`, async row => {
     const p = await getProfile(row.follower_id).catch(() => null);
     notify('➕', 'New follower', (p ? '@' + p.username : 'Someone') + ' started following you');
   });
+}
+
+/* ------------------------------------------------------------------ */
+/* background Web Push (works when the app/tab is closed, incl. mobile)  */
+/* Requires https (Netlify etc.); no-ops on file:// where service        */
+/* workers can't register.                                               */
+/* ------------------------------------------------------------------ */
+const VAPID_PUBLIC = 'BLKdRTG5M__0raee-qdDGfWlKQl2b9XUYpLoxADTjhBQjdlK7JaxCyBX9RHGKKSzmJGK9C7iXr6jAJEb7IS9U4Q';
+function urlB64ToUint8Array(base64) {
+  const pad = '='.repeat((4 - (base64.length % 4)) % 4);
+  const b = (base64 + pad).replace(/-/g, '+').replace(/_/g, '/');
+  const raw = atob(b);
+  const arr = new Uint8Array(raw.length);
+  for (let i = 0; i < raw.length; i++) arr[i] = raw.charCodeAt(i);
+  return arr;
+}
+async function enablePush(profile) {
+  try {
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) return false;
+    if (typeof Notification !== 'undefined' && Notification.permission === 'denied') return false;
+    const reg = await navigator.serviceWorker.register('../../sw.js'); // resolves to /sw.js, scope "/"
+    if ((await ensureNotifyPermission()) !== 'granted') return false;
+    let sub = await reg.pushManager.getSubscription();
+    if (!sub) sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: urlB64ToUint8Array(VAPID_PUBLIC) });
+    const j = sub.toJSON();
+    if (!j || !j.keys) return false;
+    await client().from('push_subscriptions').upsert(
+      { user_id: profile.id, endpoint: sub.endpoint, p256dh: j.keys.p256dh, auth: j.keys.auth },
+      { onConflict: 'endpoint' }
+    );
+    return true;
+  } catch (e) { return false; }
 }
 
 return {
@@ -369,6 +403,6 @@ return {
   follow, unfollow, isFollowing, followingIds, followCounts,
   uploadFile, publicUrl, signedUrl, removeFile,
   mountAuthGate, AVATARS, cleanUsername,
-  ensureNotifyPermission, notify, showBanner, watch, unwatch, unwatchAll, startCommonNotifications,
+  ensureNotifyPermission, notify, showBanner, watch, unwatch, unwatchAll, startCommonNotifications, enablePush,
 };
 })();
