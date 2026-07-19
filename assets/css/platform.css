@@ -226,6 +226,13 @@ a{color:inherit;text-decoration:none}
     repeating-linear-gradient(90deg,rgba(255,255,255,.05) 0 2px,transparent 2px 12px)}
 .gx-card-penwave{border-color:rgba(29,185,84,.3)}
 .gx-card-penwave:hover{border-color:rgba(29,185,84,.6);box-shadow:0 16px 40px rgba(0,0,0,.5),0 0 0 1px rgba(29,185,84,.3)}
+/* GX Blocks */
+.gx-badge-blocks{background:linear-gradient(90deg,rgba(245,179,1,.22),rgba(76,151,255,.22));color:#f5b301}
+.art-blocks{background:linear-gradient(135deg,#1a1636,#20264a 45%,#0e2438 100%);position:relative;overflow:hidden}
+.art-blocks::before{content:"";position:absolute;inset:0;
+  background:repeating-linear-gradient(90deg,rgba(245,179,1,.10) 0 14px,transparent 14px 28px),repeating-linear-gradient(0deg,rgba(76,151,255,.08) 0 14px,transparent 14px 28px)}
+.gx-card-blocks{border-color:rgba(245,179,1,.3)}
+.gx-card-blocks:hover{border-color:rgba(245,179,1,.6);box-shadow:0 16px 40px rgba(0,0,0,.5),0 0 0 1px rgba(245,179,1,.3)}
 /* shared "one account" tag used on the social cards */
 .gx-badge-social{background:linear-gradient(90deg,rgba(45,212,191,.2),rgba(139,92,246,.2));color:#2dd4bf;font-size:.62rem;font-weight:800;padding:2px 8px;border-radius:999px;letter-spacing:.5px}
 .gx-creations-intro{color:var(--muted);font-size:.92rem;margin-bottom:20px}

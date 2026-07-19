@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GX Blocks — Visual Game Maker — GamingX</title>
+<link rel="stylesheet" href="blocks.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧩</text></svg>">
+</head>
+<body>
+<header class="bl-topbar">
+  <a class="bl-back" href="../../index.html">← GAMINGX</a>
+  <div class="bl-logo">GX <span>BLOCKS</span></div>
+  <input id="title-input" class="bl-title" maxlength="30" placeholder="Untitled Game" spellcheck="false">
+  <div class="bl-actions">
+    <button class="bl-btn" id="btn-new">✚ New</button>
+    <button class="bl-btn" id="btn-projects">📁 Games</button>
+    <button class="bl-btn" id="btn-save">💾 Save</button>
+    <button class="bl-btn bl-btn-play" id="btn-play">▶ Play</button>
+  </div>
+</header>
+
+<main class="bl-main">
+  <aside class="bl-left">
+    <div class="bl-panel-label">SPRITES</div>
+    <div id="sprite-list" class="bl-sprite-list"></div>
+    <button class="bl-btn bl-wide" id="btn-add-sprite">✚ Add Sprite</button>
+    <div id="sprite-props" class="bl-props"></div>
+  </aside>
+
+  <section class="bl-stage-wrap">
+    <canvas id="stage" width="640" height="480"></canvas>
+    <div class="bl-hud" id="hud"></div>
+    <div class="bl-endcard hidden" id="endcard">
+      <div class="bl-endcard-box">
+        <h2 id="end-title"></h2>
+        <p id="end-msg"></p>
+        <button class="bl-btn bl-btn-play" id="btn-endcard-stop">■ BACK TO EDITOR</button>
+      </div>
+    </div>
+  </section>
+
+  <aside class="bl-right">
+    <div class="bl-panel-label" id="scripts-label">SCRIPTS</div>
+    <div id="scripts" class="bl-scripts"></div>
+  </aside>
+</main>
+
+<div class="bl-modal hidden" id="modal"><div class="bl-modal-box" id="modal-box"></div></div>
+<div id="bl-toast" class="bl-toast"></div>
+
+<script src="blockdefs.js"></script>
+<script src="engine.js"></script>
+<script src="editor.js"></script>
+</body>
+</html>
