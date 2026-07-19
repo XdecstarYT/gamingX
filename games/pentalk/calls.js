@@ -32,7 +32,25 @@ function init(_S, _me) {
   injectCss();
   inbox = S.client().channel('pt-inbox-' + me.id, { config: { broadcast: { self: false } } });
   inbox.on('broadcast', { event: 'sig' }, ({ payload }) => onInbox(payload)).subscribe();
+  maybeAnswerFromUrl(); // opened via an incoming-call push notification?
 }
+
+/* If the page was opened from an incoming-call push (…?call=<id>), present it. */
+async function maybeAnswerFromUrl() {
+  const m = location.search.match(/[?&]call=([^&]+)/);
+  if (!m) return;
+  const callId = decodeURIComponent(m[1]);
+  try { history.replaceState(null, '', location.pathname); } catch (e) {}
+  try {
+    const { data } = await S.client().from('pt_calls').select('*').eq('id', callId).maybeSingle();
+    if (!data || data.status !== 'ringing' || data.callee_id !== me.id || cur) return;
+    const caller = await S.getProfile(data.caller_id).catch(() => null);
+    pendingInvite = { kind: 'invite', callId, media: data.media, from: data.caller_id, fromName: caller ? caller.display_name : 'Caller', fromAvatar: caller ? caller.avatar : '👤' };
+    showIncomingUi(pendingInvite); startRing();
+  } catch (e) {}
+}
+
+async function setCallStatus(callId, status) { try { await S.client().from('pt_calls').update({ status }).eq('id', callId); } catch (e) {} }
 
 function supported() { return !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia && window.RTCPeerConnection); }
 
@@ -58,8 +76,13 @@ async function call(friend, media) {
   joinCallChannel(callId);
   newPeer();
   showCallUi();
+  startRing();
+  // record the call -> fires a push to the callee (rings them even if the app is closed)
+  try { await S.client().from('pt_calls').insert({ id: callId, caller_id: me.id, callee_id: friend.id, media, status: 'ringing' }); } catch (e) {}
+  // and a live invite for the instant case where they already have the app open
   await sendInbox(friend.id, { kind: 'invite', callId, media });
-  ringTimer = setTimeout(() => { if (cur && cur.state === 'ringing') { toast('No answer'); sendInbox(friend.id, { kind: 'cancel', callId }); endCall(false); } }, 30000);
+  // give them time to receive a push, open the app and answer
+  ringTimer = setTimeout(() => { if (cur && cur.state === 'ringing') { toast('No answer'); setCallStatus(callId, 'missed'); sendInbox(friend.id, { kind: 'cancel', callId }); endCall(false); } }, 60000);
 }
 
 /* ---------------- incoming ---------------- */
@@ -67,9 +90,10 @@ function onInbox(p) {
   if (!p || !p.kind) return;
   if (p.kind === 'invite') {
     if (cur) { sendInbox(p.from, { kind: 'decline', callId: p.callId, busy: true }); return; }
-    pendingInvite = p; showIncomingUi(p);
+    pendingInvite = p; showIncomingUi(p); startRing();
+    if (typeof document !== 'undefined' && document.hidden && S.notify) S.notify('📞', 'Incoming call', (p.fromName || 'Someone') + ' is calling…', () => { try { window.focus(); } catch (e) {} });
   } else if (p.kind === 'cancel') {
-    if (pendingInvite && pendingInvite.callId === p.callId) { pendingInvite = null; hideIncomingUi(); }
+    if (pendingInvite && pendingInvite.callId === p.callId) { pendingInvite = null; stopRing(); hideIncomingUi(); }
   } else if (p.kind === 'decline') {
     if (cur && cur.callId === p.callId) { toast(p.busy ? 'They\'re on another call' : 'Call declined'); endCall(false); }
   }
@@ -77,7 +101,8 @@ function onInbox(p) {
 
 async function accept() {
   const p = pendingInvite; if (!p) return;
-  hideIncomingUi();
+  stopRing(); hideIncomingUi();
+  setCallStatus(p.callId, 'accepted');
   if (!supported()) { toast('Calls need camera/mic over https.'); sendInbox(p.from, { kind: 'decline', callId: p.callId }); pendingInvite = null; return; }
   let stream;
   try { stream = await navigator.mediaDevices.getUserMedia(p.media === 'video' ? { audio: true, video: true } : { audio: true }); }
@@ -90,7 +115,7 @@ async function accept() {
   showCallUi();
   sendCall({ kind: 'accept', callId: p.callId }); // tell caller we're ready for the offer
 }
-function decline() { const p = pendingInvite; if (!p) return; sendInbox(p.from, { kind: 'decline', callId: p.callId }); pendingInvite = null; hideIncomingUi(); }
+function decline() { const p = pendingInvite; if (!p) return; sendInbox(p.from, { kind: 'decline', callId: p.callId }); setCallStatus(p.callId, 'declined'); pendingInvite = null; stopRing(); hideIncomingUi(); }
 
 /* ---------------- webrtc plumbing ---------------- */
 function joinCallChannel(callId) {
@@ -125,6 +150,8 @@ async function onCallSig(p) {
 
 function endCall(sendHangup) {
   if (sendHangup && cur) sendCall({ kind: 'hangup', callId: cur.callId });
+  if (cur) setCallStatus(cur.callId, 'ended');
+  stopRing();
   clearTimeout(ringTimer); clearInterval(tickTimer);
   if (pc) { try { pc.close(); } catch (e) {} pc = null; }
   if (localStream) { localStream.getTracks().forEach(t => t.stop()); localStream = null; }
@@ -201,7 +228,7 @@ function showCallUi() {
 function hideCallUi() { const el = document.getElementById('ptc-screen'); if (el) el.remove(); }
 function updateStatus(t) { const el = document.getElementById('ptc-status'); if (el) el.textContent = t; }
 function setConnected() {
-  if (!cur) return; cur.state = 'connected'; startedAt = Date.now();
+  if (!cur) return; stopRing(); cur.state = 'connected'; startedAt = Date.now();
   clearInterval(tickTimer);
   tickTimer = setInterval(() => { const s = Math.floor((Date.now() - startedAt) / 1000); updateStatus(Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0')); }, 1000);
   updateStatus('0:00');
@@ -213,6 +240,30 @@ function toggleTrack(kind) {
   const on = !tracks[0].enabled; tracks.forEach(t => (t.enabled = on)); return on;
 }
 function toast(m) { if (S && S.showBanner) S.showBanner('📞', m, ''); }
+
+/* simple ringtone (Web Audio) */
+let ringCtx = null, ringInt = null;
+function startRing() {
+  stopRing();
+  try {
+    ringCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if (ringCtx.state === 'suspended') ringCtx.resume().catch(() => {});
+    const beep = () => {
+      if (!ringCtx) return;
+      const now = ringCtx.currentTime;
+      [0, 0.35].forEach(off => {
+        const o = ringCtx.createOscillator(), g = ringCtx.createGain();
+        o.type = 'sine'; o.frequency.value = 470;
+        g.gain.setValueAtTime(0.0001, now + off);
+        g.gain.exponentialRampToValueAtTime(0.16, now + off + 0.04);
+        g.gain.exponentialRampToValueAtTime(0.0001, now + off + 0.28);
+        o.connect(g); g.connect(ringCtx.destination); o.start(now + off); o.stop(now + off + 0.3);
+      });
+    };
+    beep(); ringInt = setInterval(beep, 2500);
+  } catch (e) {}
+}
+function stopRing() { if (ringInt) { clearInterval(ringInt); ringInt = null; } if (ringCtx) { try { ringCtx.close(); } catch (e) {} ringCtx = null; } }
 
 return { init, call, accept, decline, supported, _state: () => cur };
 })();
