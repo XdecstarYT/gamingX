@@ -5,10 +5,13 @@
   --panel2:#1d2440;
   --text:#e8ecf8;
   --muted:#8b93ad;
-  --accent:#22d3ee;
-  --accent2:#a855f7;
+  --accent:#3aa0ff;
+  --accent2:#2f6bd6;
   --green:#22c55e;
 }
+.st-insert{display:flex;gap:4px;background:var(--panel2);border-radius:10px;padding:4px;flex-wrap:wrap}
+.st-ins{padding:7px 10px;border-radius:7px;font-size:.72rem;font-weight:800;color:var(--text);background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);white-space:nowrap}
+.st-ins:hover{border-color:var(--accent);color:var(--accent)}
 *{margin:0;padding:0;box-sizing:border-box}
 html,body{height:100%}
 body{

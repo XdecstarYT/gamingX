@@ -57,7 +57,7 @@ function menu() {
     return;
   }
   GX.show(esc(project.title || 'Untitled') + ' <span>· STUDIO</span>',
-    'A full 3D GamingX creation made in GX Studio.<br><b>WASD/Arrows</b> move · <b>Space</b> jump (physics-driven).',
+    'A full 3D GamingX creation made in GX Studio.<br><b>WASD/Arrows</b> move · <b>mouse</b> look · <b>Space</b> jump.',
     [{ label: '▶ PLAY', primary: true, cb: start },
      { label: '🧊 REMIX IN STUDIO', cb: () => location.href = 'index.html?load=' + project.id },
      { label: 'GAMINGX HUB', cb: () => location.href = '../../index.html' }]);
@@ -71,6 +71,10 @@ function start() {
     runtime.loadScene(project);
   }
   runtime.play();
+  if (runtime.characterMode && canvas.requestPointerLock) {
+    canvas.requestPointerLock();
+    canvas.onclick = () => { if (runtime && runtime.playing && runtime.characterMode && document.pointerLockElement !== canvas) canvas.requestPointerLock(); };
+  }
   let last = performance.now();
   (function frame(t) {
     if (!runtime || !runtime.playing) return;

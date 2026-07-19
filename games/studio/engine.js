@@ -24,13 +24,34 @@ let uidN = 1;
 const uid = () => 'e' + (uidN++) + Math.random().toString(36).slice(2, 6);
 
 /* ------------------------------------------------------------------ */
+/* Roblox-style material presets (name -> PBR params)                 */
+/* ------------------------------------------------------------------ */
+const MATERIALS = {
+  plastic:      { label: 'Plastic',       metalness: 0.0,  roughness: 0.55, emissive: 0,   clear: false },
+  smoothplastic:{ label: 'SmoothPlastic', metalness: 0.0,  roughness: 0.25, emissive: 0,   clear: false },
+  wood:         { label: 'Wood',          metalness: 0.0,  roughness: 0.85, emissive: 0,   clear: false },
+  metal:        { label: 'Metal',         metalness: 0.9,  roughness: 0.35, emissive: 0,   clear: false },
+  diamondplate: { label: 'DiamondPlate',  metalness: 0.85, roughness: 0.5,  emissive: 0,   clear: false },
+  slate:        { label: 'Slate',         metalness: 0.0,  roughness: 0.95, emissive: 0,   clear: false },
+  concrete:     { label: 'Concrete',      metalness: 0.0,  roughness: 1.0,  emissive: 0,   clear: false },
+  brick:        { label: 'Brick',         metalness: 0.0,  roughness: 0.9,  emissive: 0,   clear: false },
+  grass:        { label: 'Grass',         metalness: 0.0,  roughness: 1.0,  emissive: 0,   clear: false },
+  sand:         { label: 'Sand',          metalness: 0.0,  roughness: 1.0,  emissive: 0,   clear: false },
+  ice:          { label: 'Ice',           metalness: 0.1,  roughness: 0.08, emissive: 0,   clear: true  },
+  glass:        { label: 'Glass',         metalness: 0.0,  roughness: 0.05, emissive: 0,   clear: true  },
+  neon:         { label: 'Neon',          metalness: 0.0,  roughness: 0.4,  emissive: 1.4, clear: false },
+  forcefield:   { label: 'ForceField',    metalness: 0.0,  roughness: 0.3,  emissive: 0.8, clear: true  },
+};
+const MATERIAL_ORDER = ['plastic', 'smoothplastic', 'wood', 'metal', 'diamondplate', 'slate', 'concrete', 'brick', 'grass', 'sand', 'ice', 'glass', 'neon', 'forcefield'];
+
+/* ------------------------------------------------------------------ */
 /* Entity data model + factory                                        */
 /* ------------------------------------------------------------------ */
 function newEntity(kind, name) {
   return {
     id: uid(), name: name || 'Entity', tag: '',
     transform: { position: [0, 0.5, 0], rotation: [0, 0, 0], scale: [1, 1, 1] },
-    mesh: kind === 'mesh' ? { shape: 'box', color: '#22d3ee', metalness: 0.15, roughness: 0.6, emissive: '#000000', emissiveIntensity: 1, opacity: 1, wireframe: false, castShadow: true, receiveShadow: true } : null,
+    mesh: kind === 'mesh' ? { shape: 'box', color: '#a3a2a5', material: 'plastic', anchored: true, canCollide: true, reflectance: 0, transparency: 0, metalness: 0.0, roughness: 0.55, emissive: '#000000', emissiveIntensity: 1, opacity: 1, wireframe: false, castShadow: true, receiveShadow: true } : null,
     light: kind === 'light' ? { type: 'point', color: '#ffffff', intensity: 1.2, distance: 12, angle: 0.5, penumbra: 0.4, castShadow: false } : null,
     camera: kind === 'camera' ? { fov: 60, isMain: false } : null,
     rigidbody: null,
@@ -41,6 +62,22 @@ function newEntity(kind, name) {
 
 const PREFABS = {
   cube: () => { const e = newEntity('mesh', 'Cube'); return e; },
+  part: () => { const e = newEntity('mesh', 'Part'); e.mesh.shape = 'box'; e.transform.scale = [4, 1, 2]; e.transform.position = [0, 3, 0]; e.mesh.anchored = true; return e; },
+  ball: () => { const e = newEntity('mesh', 'Ball'); e.mesh.shape = 'sphere'; e.transform.position = [0, 3, 0]; e.mesh.anchored = true; return e; },
+  wedge: () => { const e = newEntity('mesh', 'Wedge'); e.mesh.shape = 'wedge'; e.transform.scale = [4, 2, 4]; e.transform.position = [0, 1, 0]; e.mesh.anchored = true; return e; },
+  spawn: () => {
+    const e = newEntity('mesh', 'SpawnLocation'); e.tag = 'spawn';
+    e.mesh.shape = 'box'; e.mesh.color = '#c9d1ff'; e.mesh.material = 'smoothplastic'; e.mesh.anchored = true; e.mesh.isSpawn = true;
+    e.mesh.emissive = '#3b4cff'; e.mesh.emissiveIntensity = 0.4;
+    e.transform.scale = [4, 0.4, 4]; e.transform.position = [0, 0.2, 0];
+    return e;
+  },
+  baseplate: () => {
+    const e = newEntity('mesh', 'Baseplate');
+    e.mesh.shape = 'box'; e.mesh.color = '#6c757d'; e.mesh.material = 'plastic'; e.mesh.anchored = true; e.mesh.receiveShadow = true; e.mesh.castShadow = false;
+    e.transform.scale = [120, 2, 120]; e.transform.position = [0, -1, 0];
+    return e;
+  },
   sphere: () => { const e = newEntity('mesh', 'Sphere'); e.mesh.shape = 'sphere'; e.mesh.color = '#f2b03d'; return e; },
   cylinder: () => { const e = newEntity('mesh', 'Cylinder'); e.mesh.shape = 'cylinder'; e.mesh.color = '#a855f7'; return e; },
   cone: () => { const e = newEntity('mesh', 'Cone'); e.mesh.shape = 'cone'; e.mesh.color = '#22c55e'; return e; },
@@ -209,21 +246,60 @@ function onUpdate(api) {
 /* ------------------------------------------------------------------ */
 /* Geometry / material / light builders                               */
 /* ------------------------------------------------------------------ */
+function buildWedge() {
+  // unit right-triangular prism: vertical face at -Z, sloping down toward +Z
+  const g = new THREE.BufferGeometry();
+  const v = [
+    -0.5, -0.5, -0.5, 0.5, -0.5, -0.5, 0.5, -0.5, 0.5, -0.5, -0.5, 0.5, // bottom
+    -0.5, 0.5, -0.5, 0.5, 0.5, -0.5,                                     // top back edge
+  ];
+  const idx = [
+    0, 1, 2, 0, 2, 3,       // bottom
+    0, 4, 5, 0, 5, 1,       // back vertical
+    4, 3, 2, 4, 2, 5,       // slope
+    0, 3, 4,                // left triangle
+    1, 5, 2,                // right triangle
+  ];
+  g.setAttribute('position', new THREE.Float32BufferAttribute(v, 3));
+  g.setIndex(idx);
+  g.computeVertexNormals();
+  return g;
+}
 function buildGeometry(shape) {
   switch (shape) {
     case 'sphere': return new THREE.SphereGeometry(0.5, 28, 20);
     case 'cylinder': return new THREE.CylinderGeometry(0.5, 0.5, 1, 24);
     case 'cone': return new THREE.ConeGeometry(0.5, 1, 24);
     case 'torus': return new THREE.TorusGeometry(0.5, 0.18, 12, 30);
+    case 'wedge': return buildWedge();
     case 'plane': return new THREE.PlaneGeometry(1, 1, 1, 1);
     case 'box': default: return new THREE.BoxGeometry(1, 1, 1);
   }
 }
 function buildMaterial(m) {
+  const transparency = m.transparency != null ? m.transparency : (1 - (m.opacity != null ? m.opacity : 1));
+  const opacity = Math.max(0.05, 1 - transparency);
+  if (!m.material) {
+    // legacy path (scenes/prefabs authored before the material system)
+    return new THREE.MeshStandardMaterial({
+      color: m.color, metalness: m.metalness, roughness: m.roughness,
+      emissive: m.emissive, emissiveIntensity: m.emissiveIntensity,
+      transparent: opacity < 1, opacity, wireframe: !!m.wireframe,
+    });
+  }
+  const preset = MATERIALS[m.material] || MATERIALS.plastic;
+  const refl = m.reflectance || 0;
+  const glow = preset.emissive || 0;
+  const ff = m.material === 'forcefield';
   return new THREE.MeshStandardMaterial({
-    color: m.color, metalness: m.metalness, roughness: m.roughness,
-    emissive: m.emissive, emissiveIntensity: m.emissiveIntensity,
-    transparent: m.opacity < 1, opacity: m.opacity, wireframe: !!m.wireframe,
+    color: m.color,
+    metalness: Math.max(preset.metalness, refl),
+    roughness: Math.max(0.02, preset.roughness * (1 - refl * 0.6)),
+    emissive: glow > 0 ? m.color : (m.emissive || '#000000'),
+    emissiveIntensity: glow > 0 ? glow : (m.emissiveIntensity || 0),
+    transparent: opacity < 1 || preset.clear || ff,
+    opacity: ff ? Math.min(opacity, 0.4) : (preset.clear ? Math.min(opacity, 0.6) : opacity),
+    wireframe: !!m.wireframe,
   });
 }
 function buildLight(l) {
@@ -661,22 +737,139 @@ class Runtime {
   _bindInput() {
     this._onKeyDown = (e) => { if (!this.keys[e.code]) this.pressedKeys.add(e.code); this.keys[e.code] = true; };
     this._onKeyUp = (e) => { this.keys[e.code] = false; };
-    this._onMouseMove = (e) => { this.mouseDX = e.movementX || 0; this.mouseDY = e.movementY || 0; };
+    this._onMouseMove = (e) => { this.mouseDX += e.movementX || 0; this.mouseDY += e.movementY || 0; };
     addEventListener('keydown', this._onKeyDown);
     addEventListener('keyup', this._onKeyUp);
+    addEventListener('mousemove', this._onMouseMove);
+  }
+
+  /* ---------------- character playtest (Roblox-style "Play Solo") ----------------
+     Spawns a controllable blocky avatar at a SpawnLocation, gives every part a
+     collider (anchored = static, unanchored = falls), and drives a third-person
+     camera with mouse-look + WASD + jump. Used when the scene has no scripted
+     'player' entity. */
+  _initCharacterColliders() {
+    if (!this._groundMat) this._groundMat = new CANNON.Material('gxground');
+    for (const rec of this.entities.values()) {
+      if (rec.body) continue;                 // already has a collider (explicit rigidbody)
+      const m = rec.data.mesh;
+      if (!m || m.canCollide === false) continue;
+      const scale = rec.object3d.getWorldScale(new THREE.Vector3());
+      const pos = rec.object3d.getWorldPosition(new THREE.Vector3());
+      const quat = rec.object3d.getWorldQuaternion(new THREE.Quaternion());
+      const anchored = m.anchored !== false;
+      let shape;
+      if (m.shape === 'sphere') shape = new CANNON.Sphere(0.5 * Math.max(scale.x, scale.y, scale.z));
+      else shape = new CANNON.Box(new CANNON.Vec3(Math.max(0.05, 0.5 * scale.x), Math.max(0.05, 0.5 * scale.y), Math.max(0.05, 0.5 * scale.z)));
+      const mass = anchored ? 0 : Math.max(1, scale.x * scale.y * scale.z);
+      const body = new CANNON.Body({ mass, shape, material: this._groundMat, position: new CANNON.Vec3(pos.x, pos.y, pos.z), quaternion: new CANNON.Quaternion(quat.x, quat.y, quat.z, quat.w) });
+      body.gxEntityId = rec.data.id;
+      this.world.addBody(body);
+      if (!anchored) rec.body = body;         // dynamic parts follow their body
+    }
+  }
+  _buildAvatar() {
+    const g = new THREE.Group();
+    const mk = (w, h, d, color, y) => {
+      const mesh = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), new THREE.MeshStandardMaterial({ color, roughness: 0.6 }));
+      mesh.position.y = y; mesh.castShadow = true; g.add(mesh); return mesh;
+    };
+    mk(1.0, 1.0, 0.5, '#f2c14e', 2.0);      // head
+    mk(1.4, 1.4, 0.7, '#2d7dd2', 0.9);      // torso
+    const la = mk(0.45, 1.3, 0.45, '#f2c14e', 0.85); la.position.x = -0.95;
+    const ra = mk(0.45, 1.3, 0.45, '#f2c14e', 0.85); ra.position.x = 0.95;
+    const ll = mk(0.55, 1.2, 0.55, '#3a7d3a', -0.3); ll.position.x = -0.35;
+    const rl = mk(0.55, 1.2, 0.55, '#3a7d3a', -0.3); rl.position.x = 0.35;
+    return g;
+  }
+  _spawnCharacter() {
+    let sp = null;
+    for (const rec of this.entities.values()) { const m = rec.data.mesh; if (rec.data.tag === 'spawn' || (m && m.isSpawn)) { sp = rec.object3d.getWorldPosition(new THREE.Vector3()); break; } }
+    const start = sp ? { x: sp.x, y: sp.y + 2.4, z: sp.z } : { x: 0, y: 4, z: 0 };
+
+    const group = this._buildAvatar();
+    group.position.set(start.x, start.y - 1.2, start.z);
+    this.scene.add(group);
+
+    const charMat = new CANNON.Material('gxchar');
+    const body = new CANNON.Body({
+      mass: 5, fixedRotation: true, linearDamping: 0.0, allowSleep: false, material: charMat,
+      shape: new CANNON.Sphere(1.1),
+      position: new CANNON.Vec3(start.x, start.y, start.z),
+    });
+    body.updateMassProperties();
+    this.world.addBody(body);
+    // frictionless character-vs-ground contact so setting velocity actually moves it
+    if (this._groundMat) this.world.addContactMaterial(new CANNON.ContactMaterial(charMat, this._groundMat, { friction: 0, restitution: 0 }));
+
+    const cam = new THREE.PerspectiveCamera(70, 1, 0.1, 600);
+    this.scene.add(cam);
+    this.character = { body, group, cam, yaw: 0, pitch: 0.35, dist: 11, speed: 9, jump: 12 };
+    this.activeCamera = cam;
+    this.renderPass.camera = cam;
+    this._resize();
+  }
+  _stepCharacter(dt) {
+    const c = this.character; if (!c) return;
+    c.yaw -= this.mouseDX * 0.0025;
+    c.pitch = Math.max(-0.2, Math.min(1.2, c.pitch + this.mouseDY * 0.0025));
+
+    // movement relative to camera yaw
+    let fx = 0, fz = 0;
+    if (this.keys['KeyW'] || this.keys['ArrowUp']) fz -= 1;
+    if (this.keys['KeyS'] || this.keys['ArrowDown']) fz += 1;
+    if (this.keys['KeyA'] || this.keys['ArrowLeft']) fx -= 1;
+    if (this.keys['KeyD'] || this.keys['ArrowRight']) fx += 1;
+    const sin = Math.sin(c.yaw), cos = Math.cos(c.yaw);
+    // forward = (sin, cos) in this yaw convention (camera sits behind +)
+    let wx = fx * cos - fz * sin;
+    let wz = fx * sin + fz * cos;
+    const len = Math.hypot(wx, wz);
+    if (len > 0) { wx = wx / len * c.speed; wz = wz / len * c.speed; }
+    c.body.wakeUp();
+    c.body.velocity.x = wx; c.body.velocity.z = wz;
+
+    // ground check + jump
+    const from = c.body.position;
+    const res = new CANNON.RaycastResult();
+    this.world.raycastClosest(from, new CANNON.Vec3(from.x, from.y - 1.35, from.z), {}, res);
+    const grounded = res.hasHit;
+    if (grounded && (this.pressedKeys.has('Space'))) c.body.velocity.y = c.jump;
+
+    // sync avatar
+    c.group.position.set(from.x, from.y - 1.2, from.z);
+    if (len > 0) { c.group.rotation.y = Math.atan2(wx, wz); }
+
+    // respawn if fallen off the world
+    if (from.y < -40) { const s = this._characterStart || { x: 0, y: 6, z: 0 }; c.body.position.set(s.x, s.y, s.z); c.body.velocity.set(0, 0, 0); }
+    else if (!this._characterStart && grounded) this._characterStart = { x: from.x, y: from.y + 3, z: from.z };
+
+    // third-person camera
+    const cp = Math.cos(c.pitch), sp = Math.sin(c.pitch);
+    const cx = from.x - Math.sin(c.yaw) * c.dist * cp;
+    const cy = from.y + 2.2 + sp * c.dist;
+    const cz = from.z - Math.cos(c.yaw) * c.dist * cp;
+    c.cam.position.set(cx, cy, cz);
+    c.cam.lookAt(from.x, from.y + 1.2, from.z);
   }
 
   /* ---------------- play / stop ---------------- */
-  play() {
+  play(opts) {
     if (this.playing) return;
+    opts = opts || {};
     this._snapshot = JSON.parse(JSON.stringify(this.data));
     this.playing = true;
     this._ended = false;
     this.score = 0;
     this.time = 0;
+    this.character = null;
+    this._characterStart = null;
     this._initPhysics();
+    const hasPlayer = [...this.entities.values()].some(r => r.data.tag === 'player');
+    this.characterMode = opts.character != null ? opts.character : !hasPlayer;
+    if (this.characterMode) { this._initCharacterColliders(); this._spawnCharacter(); }
     this._initScripts();
-    if (this.mainCameraEntity) this.activeCamera = this.mainCameraEntity.cameraObj;
+    if (!this.characterMode && this.mainCameraEntity) this.activeCamera = this.mainCameraEntity.cameraObj;
     this.renderPass.camera = this.activeCamera;
     this._resize();
   }
@@ -685,6 +878,8 @@ class Runtime {
     const snap = this._snapshot;
     this._snapshot = null;
     this.world = null;
+    this.characterMode = false;
+    this.character = null;
     if (snap) {
       // restore in place so `this.data` stays the same object the editor holds
       const data = this.data;
@@ -701,6 +896,7 @@ class Runtime {
     this._lastDt = dt;
     this.time += dt;
     if (this.playing && this.world) {
+      if (this.characterMode) this._stepCharacter(dt);
       this._accum += dt;
       const FIXED = 1 / 60;
       let n = 0;
@@ -733,6 +929,7 @@ class Runtime {
     cancelAnimationFrame(this._raf);
     removeEventListener('keydown', this._onKeyDown);
     removeEventListener('keyup', this._onKeyUp);
+    removeEventListener('mousemove', this._onMouseMove);
     removeEventListener('resize', this._resizeHandler);
   }
 }
@@ -746,22 +943,26 @@ function cloneEntity(data) {
   return c;
 }
 function validateScene(scene) {
+  // Soft validation: character Play works with any parts. Only block on an
+  // empty scene; a scripted-player scene still needs its main camera.
   const issues = [];
-  let hasPlayer = false, hasMain = false;
+  let count = 0, hasPlayer = false, hasMain = false;
   (function walk(list) {
     for (const e of list) {
+      count++;
       if (e.tag === 'player') hasPlayer = true;
       if (e.camera && e.camera.isMain) hasMain = true;
       walk(e.children || []);
     }
   })(scene.entities);
-  if (!hasPlayer) issues.push('Add a Player entity (Add → Prefab → Player Controller).');
-  if (!hasMain) issues.push('Mark a camera as the Main Camera (select a Camera, check “Main Camera”).');
+  if (!count) issues.push('Add at least one part or a Baseplate first.');
+  if (hasPlayer && !hasMain) issues.push('Your scripted Player needs a Main Camera (select a Camera → check “Main Camera”).');
   return issues;
 }
 
 window.GXStudio = {
   newEntity, newScene, defaultSettings, PREFABS, SCRIPT_LIB,
   buildGeometry, buildMaterial, Runtime, cloneEntity, validateScene, uid,
+  MATERIALS, MATERIAL_ORDER,
 };
 })();

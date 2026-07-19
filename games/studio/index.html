@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>GX Studio — 3D Engine — GamingX</title>
+<title>GX Studio — 3D Game Creator — GamingX</title>
 <link rel="stylesheet" href="studio.css">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧊</text></svg>">
 </head>
@@ -21,6 +21,14 @@
     <button class="st-tool" data-tool="scale" title="Scale (R)">⤢</button>
   </div>
 
+  <div class="st-insert" id="quick-insert">
+    <button class="st-ins" data-quick="part" title="Insert Block">◼ Part</button>
+    <button class="st-ins" data-quick="ball" title="Insert Ball">● Ball</button>
+    <button class="st-ins" data-quick="wedge" title="Insert Wedge">◹ Wedge</button>
+    <button class="st-ins" data-quick="cylinder" title="Insert Cylinder">⬤ Cyl</button>
+    <button class="st-ins" data-quick="spawn" title="Insert SpawnLocation">⬢ Spawn</button>
+  </div>
+
   <div class="st-actions">
     <button class="st-btn" id="btn-new">✚ New</button>
     <button class="st-btn" id="btn-myprojects">📁 Projects</button>
@@ -33,8 +41,8 @@
 
 <main class="st-main">
   <aside class="st-hierarchy">
-    <div class="st-side-label">HIERARCHY</div>
-    <button class="st-btn st-wide" id="btn-add">✚ Add Object</button>
+    <div class="st-side-label">EXPLORER</div>
+    <button class="st-btn st-wide" id="btn-add">✚ Insert Object</button>
     <div id="hierarchy" class="st-tree"></div>
   </aside>
 
@@ -54,8 +62,8 @@
 
   <aside class="st-inspector">
     <div class="st-tabs">
-      <button class="st-tab on" data-tab="entity">ENTITY</button>
-      <button class="st-tab" data-tab="scene">SCENE</button>
+      <button class="st-tab on" data-tab="entity">PROPERTIES</button>
+      <button class="st-tab" data-tab="scene">WORLD</button>
     </div>
     <div id="inspector-entity" class="st-panel"></div>
     <div id="inspector-scene" class="st-panel hidden"></div>

@@ -18,6 +18,17 @@ const saveProjects = list => { try { localStorage.setItem(PROJECTS_KEY, JSON.str
 /* ------------------------------------------------------------------ */
 /* templates                                                          */
 /* ------------------------------------------------------------------ */
+function templateBaseplate() {
+  const s = GXS.newScene('Baseplate');
+  s.settings.sky = { top: '#8ec5ff', bottom: '#dff0ff' };
+  s.settings.fogColor = '#cfe6ff'; s.settings.fogDensity = 0.006;
+  s.settings.ambient = { color: '#bfd4ff', intensity: 0.7 };
+  s.entities.push(GXS.PREFABS.baseplate());
+  s.entities.push(GXS.PREFABS.spawn());
+  const sun = GXS.PREFABS.dirlight(); sun.transform.position = [30, 50, 20];
+  s.entities.push(sun);
+  return s;
+}
 function templateEmpty() {
   const s = GXS.newScene('Empty Scene');
   s.entities.push(GXS.PREFABS.plane());
@@ -98,7 +109,7 @@ function entityKind(e) {
 }
 function toolToGizmoMode(t) { return t === 'move' ? 'translate' : t; }
 function entityIcon(e) {
-  if (e.mesh) return { box: '◼', sphere: '●', cylinder: '⬤', cone: '▲', torus: '◎', plane: '▬' }[e.mesh.shape] || '◼';
+  if (e.mesh) return (e.mesh.isSpawn ? '⬢' : { box: '◼', sphere: '●', cylinder: '⬤', cone: '▲', torus: '◎', wedge: '◹', plane: '▬' }[e.mesh.shape]) || '◼';
   if (e.light) return '💡';
   if (e.camera) return '🎥';
   return '📁';
@@ -143,7 +154,10 @@ function bindViewportPicking(canvas) {
   const raycaster = new THREE.Raycaster();
   const pointer = new THREE.Vector2();
   let downX = 0, downY = 0;
-  canvas.addEventListener('pointerdown', (e) => { downX = e.clientX; downY = e.clientY; });
+  canvas.addEventListener('pointerdown', (e) => {
+    downX = e.clientX; downY = e.clientY;
+    if (runtime.playing && runtime.characterMode && document.pointerLockElement !== canvas && canvas.requestPointerLock) canvas.requestPointerLock();
+  });
   canvas.addEventListener('pointerup', (e) => {
     if (runtime.playing || gizmo.dragging) return;
     if (Math.hypot(e.clientX - downX, e.clientY - downY) > 5) return; // was a camera drag
@@ -246,10 +260,10 @@ function applyLiveVisual(entity, rec) {
   rec.object3d.rotation.set(THREE.MathUtils.degToRad(t.rotation[0]), THREE.MathUtils.degToRad(t.rotation[1]), THREE.MathUtils.degToRad(t.rotation[2]));
   rec.object3d.scale.set(...t.scale);
   if (entity.mesh && rec.meshObj) {
-    const m = rec.meshObj.material;
-    m.color.set(entity.mesh.color); m.metalness = entity.mesh.metalness; m.roughness = entity.mesh.roughness;
-    m.emissive.set(entity.mesh.emissive); m.emissiveIntensity = entity.mesh.emissiveIntensity;
-    m.opacity = entity.mesh.opacity; m.transparent = entity.mesh.opacity < 1; m.wireframe = !!entity.mesh.wireframe;
+    // rebuild the material so Roblox material/transparency/reflectance all apply live
+    const old = rec.meshObj.material;
+    rec.meshObj.material = GXS.buildMaterial(entity.mesh);
+    if (old && old.dispose) old.dispose();
     rec.meshObj.castShadow = entity.mesh.castShadow; rec.meshObj.receiveShadow = entity.mesh.receiveShadow;
   }
   if (entity.light && rec.lightObj) {
@@ -316,18 +330,22 @@ function renderInspectorEntity() {
 }
 
 function meshSection(e) {
-  return `<div class="st-group"><div class="st-group-head"><b>📦 MESH RENDERER</b><button data-removecomp="mesh">✕</button></div>
+  const mat = e.mesh.material || 'plastic';
+  const transparency = e.mesh.transparency != null ? e.mesh.transparency : (1 - (e.mesh.opacity != null ? e.mesh.opacity : 1));
+  return `<div class="st-group"><div class="st-group-head"><b>📦 PART</b><button data-removecomp="mesh">✕</button></div>
     <div class="st-field"><label>SHAPE</label>
       <select class="st-input" id="f-mesh-shape">
-        ${['box', 'sphere', 'cylinder', 'cone', 'torus', 'plane'].map(s => `<option value="${s}" ${e.mesh.shape === s ? 'selected' : ''}>${s}</option>`).join('')}
+        ${['box', 'sphere', 'cylinder', 'cone', 'wedge', 'torus', 'plane'].map(s => `<option value="${s}" ${e.mesh.shape === s ? 'selected' : ''}>${s === 'box' ? 'Block' : s}</option>`).join('')}
+      </select></div>
+    <div class="st-field"><label>MATERIAL</label>
+      <select class="st-input" id="f-mesh-material">
+        ${GXS.MATERIAL_ORDER.map(k => `<option value="${k}" ${mat === k ? 'selected' : ''}>${GXS.MATERIALS[k].label}</option>`).join('')}
       </select></div>
     <div class="st-field"><label>COLOR</label><input class="st-input" type="color" id="f-mesh-color" value="${e.mesh.color}"></div>
-    <div class="st-field"><label>METALNESS</label><div class="st-slider-row"><input class="st-input" type="range" min="0" max="1" step="0.05" id="f-mesh-metalness" value="${e.mesh.metalness}"><span class="val">${e.mesh.metalness}</span></div></div>
-    <div class="st-field"><label>ROUGHNESS</label><div class="st-slider-row"><input class="st-input" type="range" min="0" max="1" step="0.05" id="f-mesh-roughness" value="${e.mesh.roughness}"><span class="val">${e.mesh.roughness}</span></div></div>
-    <div class="st-field"><label>EMISSIVE</label><input class="st-input" type="color" id="f-mesh-emissive" value="${e.mesh.emissive}"></div>
-    <div class="st-field"><label>EMISSIVE STRENGTH</label><div class="st-slider-row"><input class="st-input" type="range" min="0" max="3" step="0.1" id="f-mesh-emissiveIntensity" value="${e.mesh.emissiveIntensity}"><span class="val">${e.mesh.emissiveIntensity}</span></div></div>
-    <div class="st-field"><label>OPACITY</label><div class="st-slider-row"><input class="st-input" type="range" min="0.05" max="1" step="0.05" id="f-mesh-opacity" value="${e.mesh.opacity}"><span class="val">${e.mesh.opacity}</span></div></div>
-    <div class="st-field"><label class="st-check"><input type="checkbox" id="f-mesh-wireframe" ${e.mesh.wireframe ? 'checked' : ''}> Wireframe</label></div>
+    <div class="st-field"><label>TRANSPARENCY</label><div class="st-slider-row"><input class="st-input" type="range" min="0" max="1" step="0.05" id="f-mesh-transparency" value="${transparency}"><span class="val">${round2(transparency)}</span></div></div>
+    <div class="st-field"><label>REFLECTANCE</label><div class="st-slider-row"><input class="st-input" type="range" min="0" max="1" step="0.05" id="f-mesh-reflectance" value="${e.mesh.reflectance || 0}"><span class="val">${round2(e.mesh.reflectance || 0)}</span></div></div>
+    <div class="st-field"><label class="st-check"><input type="checkbox" id="f-mesh-anchored" ${e.mesh.anchored !== false ? 'checked' : ''}> Anchored (won't fall)</label></div>
+    <div class="st-field"><label class="st-check"><input type="checkbox" id="f-mesh-canCollide" ${e.mesh.canCollide !== false ? 'checked' : ''}> CanCollide</label></div>
     <div class="st-field"><label class="st-check"><input type="checkbox" id="f-mesh-castShadow" ${e.mesh.castShadow ? 'checked' : ''}> Cast shadow</label></div>
     <div class="st-field"><label class="st-check"><input type="checkbox" id="f-mesh-receiveShadow" ${e.mesh.receiveShadow ? 'checked' : ''}> Receive shadow</label></div>
   </div>`;
@@ -442,13 +460,13 @@ function wireEntityInspector(e, rec) {
   if (e.mesh) {
     const sel = panel.querySelector('#f-mesh-shape');
     if (sel) sel.addEventListener('change', () => { e.mesh.shape = sel.value; markDirty(); rebuildViewport(); });
+    const matSel = panel.querySelector('#f-mesh-material');
+    if (matSel) matSel.addEventListener('change', () => { e.mesh.material = matSel.value; applyLiveVisual(e, rec); markDirty(); });
     bindSlider('f-mesh-color', e.mesh, 'color', true);
-    bindSlider('f-mesh-metalness', e.mesh, 'metalness');
-    bindSlider('f-mesh-roughness', e.mesh, 'roughness');
-    bindSlider('f-mesh-emissive', e.mesh, 'emissive', true);
-    bindSlider('f-mesh-emissiveIntensity', e.mesh, 'emissiveIntensity');
-    bindSlider('f-mesh-opacity', e.mesh, 'opacity');
-    bindCheck('f-mesh-wireframe', e.mesh, 'wireframe');
+    bindSlider('f-mesh-transparency', e.mesh, 'transparency');
+    bindSlider('f-mesh-reflectance', e.mesh, 'reflectance');
+    bindCheck('f-mesh-anchored', e.mesh, 'anchored');
+    bindCheck('f-mesh-canCollide', e.mesh, 'canCollide');
     bindCheck('f-mesh-castShadow', e.mesh, 'castShadow');
     bindCheck('f-mesh-receiveShadow', e.mesh, 'receiveShadow');
   }
@@ -648,6 +666,11 @@ $('toolbar').addEventListener('click', e => {
   const btn = e.target.closest('.st-tool');
   if (btn) setTool(btn.dataset.tool);
 });
+const quickBar = $('quick-insert');
+if (quickBar) quickBar.addEventListener('click', e => {
+  const btn = e.target.closest('.st-ins');
+  if (btn) addEntity(btn.dataset.quick);
+});
 addEventListener('keydown', e => {
   if (document.activeElement && ['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName)) return;
   if (e.code === 'KeyQ') setTool('select');
@@ -692,17 +715,18 @@ $('btn-clear-console').addEventListener('click', e => { e.stopPropagation(); $('
 /* ------------------------------------------------------------------ */
 let hudTimer = 0;
 function startPlay() {
-  const issues = GXS.validateScene(project);
-  if (issues.length) return showModal(`<h2>CAN'T PLAY YET</h2><p>${issues.join('<br>')}</p><div class="st-modal-buttons"><button class="st-btn" data-x>OK</button></div>`);
   $('console-log').innerHTML = '';
   runtime.play();
   gizmo.detach();
   $('btn-play').textContent = '■ Stop';
   $('btn-play').classList.add('playing');
   $('playbadge').classList.remove('hidden');
+  $('playbadge').textContent = runtime.characterMode ? '▶ PLAYING — WASD move · mouse look · Space jump · Esc to stop' : '▶ PLAYING — Esc to stop';
   $('gamehud').classList.remove('hidden');
   updateGameHud();
   hudTimer = setInterval(updateGameHud, 200);
+  // pointer lock for mouse-look in character mode (from the Play click gesture)
+  if (runtime.characterMode) { const cv = $('viewport'); if (cv.requestPointerLock) cv.requestPointerLock(); }
 }
 function updateGameHud() {
   if (!runtime.playing) return;
@@ -710,6 +734,7 @@ function updateGameHud() {
 }
 function stopPlay() {
   clearInterval(hudTimer);
+  if (document.exitPointerLock && document.pointerLockElement) document.exitPointerLock();
   runtime.stop();
   $('btn-play').textContent = '▶ Play';
   $('btn-play').classList.remove('playing');
@@ -830,7 +855,7 @@ $('btn-myprojects').addEventListener('click', () => {
 $('btn-new').addEventListener('click', () => {
   showModal(`<h2>✚ NEW SCENE</h2>
     <div class="st-opt-row" id="nm-tpl">
-      <button class="st-opt on" data-v="empty">EMPTY<small>ground + sun + camera</small></button>
+      <button class="st-opt on" data-v="baseplate">BASEPLATE<small>baseplate + spawn (walk it!)</small></button>
       <button class="st-opt" data-v="physics">PHYSICS PLAYGROUND<small>ramps &amp; crates</small></button>
       <button class="st-opt" data-v="arena">ARENA ADVENTURE<small>coins, enemy, goal</small></button>
     </div>
@@ -840,7 +865,7 @@ $('btn-new').addEventListener('click', () => {
     </div>`, act => {
     if (act !== 'create') return;
     const v = document.querySelector('#nm-tpl .st-opt.on').dataset.v;
-    project = v === 'physics' ? templatePhysics() : v === 'arena' ? templateArena() : templateEmpty();
+    project = v === 'physics' ? templatePhysics() : v === 'arena' ? templateArena() : templateBaseplate();
     undoStack = [];
     rebuildViewport(); renderHierarchy(); selectEntity(null);
     $('title-input').value = project.title || '';
@@ -858,11 +883,11 @@ $('btn-new').addEventListener('click', () => {
 /* ------------------------------------------------------------------ */
 $('btn-add').addEventListener('click', () => {
   const cat = (title, items) => `<div class="st-cat">${title}</div><div class="st-grid-add">${items.map(([k, l, em]) => `<button data-add="${k}"><span class="em">${em}</span>${l}</button>`).join('')}</div>`;
-  showModal(`<h2>✚ ADD OBJECT</h2>
-    ${cat('PRIMITIVES', [['cube', 'Cube', '◼'], ['sphere', 'Sphere', '●'], ['cylinder', 'Cylinder', '⬤'], ['cone', 'Cone', '▲'], ['torus', 'Torus', '◎'], ['plane', 'Ground Plane', '▬'], ['group', 'Empty Group', '📁']])}
-    ${cat('LIGHTS', [['dirlight', 'Directional', '☀️'], ['pointlight', 'Point Light', '💡'], ['spotlight', 'Spot Light', '🔦'], ['ambient', 'Ambient', '🌫️']])}
+  showModal(`<h2>✚ INSERT OBJECT</h2>
+    ${cat('PARTS', [['part', 'Block', '◼'], ['ball', 'Ball', '●'], ['cylinder', 'Cylinder', '⬤'], ['wedge', 'Wedge', '◹'], ['cone', 'Cone', '▲'], ['spawn', 'SpawnLocation', '⬢'], ['baseplate', 'Baseplate', '▦'], ['group', 'Model (group)', '📁']])}
+    ${cat('LIGHTING', [['dirlight', 'Sun (Directional)', '☀️'], ['pointlight', 'Point Light', '💡'], ['spotlight', 'Spot Light', '🔦'], ['ambient', 'Ambient', '🌫️']])}
     ${cat('CAMERA', [['camera', 'Camera', '🎥'], ['camerafollow', 'Follow Camera', '🎬']])}
-    ${cat('GAME PREFABS', [['player', 'Player Controller', '🔵'], ['coin', 'Coin Pickup', '🪙'], ['enemy', 'Patrol Enemy', '🔺'], ['platform', 'Moving Platform', '🟪'], ['winzone', 'Win Zone', '🏁'], ['crate', 'Physics Crate', '📦']])}
+    ${cat('GAMEPLAY PREFABS', [['coin', 'Coin Pickup', '🪙'], ['enemy', 'Patrol Enemy', '🔺'], ['platform', 'Moving Platform', '🟪'], ['winzone', 'Win Zone', '🏁'], ['crate', 'Physics Crate', '📦'], ['player', 'Scripted Player', '🔵']])}
     <div class="st-modal-buttons"><button class="st-btn" data-x>CANCEL</button></div>`);
   document.querySelectorAll('[data-add]').forEach(b => b.addEventListener('click', () => addEntity(b.dataset.add)));
 });
@@ -911,13 +936,15 @@ function boot() {
     try { project = JSON.parse(localStorage.getItem(DRAFT_KEY) || 'null'); } catch (e) { project = null; }
     if (project && !project.entities) project = null;
   }
-  if (!project) project = templateArena();
+  if (!project) project = templateBaseplate();
 
   $('title-input').value = project.title || '';
   initViewport();
   renderHierarchy();
   selectEntity(null);
   renderInspectorScene();
+  // lightweight hooks for automated tests / debugging
+  window.__studio = { rt: () => runtime, project: () => project, selected: () => selectedId, select: selectEntity, insert: addEntity };
 }
 boot();
 })();
