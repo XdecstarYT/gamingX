@@ -353,15 +353,37 @@ function watch(table, event, filter, handler) {
 function unwatch(ch) { try { client().removeChannel(ch); } catch (e) {} }
 function unwatchAll() { _channels.splice(0).forEach(ch => { try { client().removeChannel(ch); } catch (e) {} }); }
 
-/* Common to every app: ask for permission once, register background push,
-   then notify on new followers (live, while open). */
+/* Common to every app: set up push (with an iOS-safe tap prompt) + notify on
+   new followers (live, while open). */
 async function startCommonNotifications(profile) {
-  await ensureNotifyPermission();
-  enablePush(profile);
+  maybePromptPush(profile);
   watch('follows', 'INSERT', `following_id=eq.${profile.id}`, async row => {
     const p = await getProfile(row.follower_id).catch(() => null);
     notify('➕', 'New follower', (p ? '@' + p.username : 'Someone') + ' started following you');
   });
+}
+
+/* iOS Safari only grants notification permission from a direct user gesture,
+   so if it isn't granted yet we show a tap-to-enable banner instead of asking
+   silently. Already-granted users are subscribed immediately. */
+function maybePromptPush(profile) {
+  if (typeof Notification === 'undefined') return;
+  if (Notification.permission === 'granted') { enablePush(profile); return; }
+  if (Notification.permission === 'denied') return;
+  showEnableBanner(async () => {
+    const perm = await ensureNotifyPermission();
+    if (perm === 'granted') { await enablePush(profile); showBanner('🔔', 'Notifications on', 'You\'ll get snaps, messages & calls here.'); }
+  });
+}
+function showEnableBanner(onEnable) {
+  injectBannerCss();
+  if (document.getElementById('gxs-enable')) return;
+  const el = document.createElement('div'); el.className = 'gxs-banner'; el.id = 'gxs-enable';
+  el.innerHTML = '<div class="ic">🔔</div><div style="flex:1"><div class="tt">Turn on notifications</div><div class="bd">Get snaps, messages &amp; calls even when the app is closed.</div></div>'
+    + '<button id="gxs-enable-btn" style="border:none;border-radius:999px;font-weight:800;font-size:.82rem;padding:9px 15px;cursor:pointer;background:linear-gradient(90deg,#ff5470,#2dd4bf);color:#0a0a12">Enable</button>';
+  document.body.appendChild(el);
+  requestAnimationFrame(() => el.classList.add('show'));
+  el.querySelector('#gxs-enable-btn').addEventListener('click', async () => { el.classList.remove('show'); setTimeout(() => el.remove(), 250); await onEnable(); });
 }
 
 /* ------------------------------------------------------------------ */
