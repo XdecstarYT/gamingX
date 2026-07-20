@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Turbo Circuit — Kart Racing Career — GamingX</title>
+<link rel="stylesheet" href="circuit.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏎️</text></svg>">
+<link rel="stylesheet" href="../../assets/css/mobile.css">
+</head>
+<body>
+
+<header class="cc-topbar">
+  <a class="cc-back" href="../../index.html">← GAMINGX</a>
+  <div class="cc-logo">🏎️ <span>TURBO CIRCUIT</span></div>
+</header>
+
+<main class="cc-main">
+  <div id="stage-wrap">
+    <canvas id="stage"></canvas>
+    <div class="cc-hud">
+      <span class="grp" id="cc-lap">LAP 1/3</span>
+      <span class="grp" id="cc-pos">1st / 5</span>
+      <span class="grp" id="cc-speed">0 km/h</span>
+    </div>
+    <div class="cc-boost"><div class="cc-boost-fill" id="cc-boost-fill"></div></div>
+    <div class="cc-touch">
+      <div id="steer-wheel"></div>
+      <button class="cc-pedal" id="btn-drift">🔥</button>
+      <div class="cc-pedals">
+        <button class="cc-pedal" id="btn-accel">▲</button>
+        <button class="cc-pedal" id="btn-brake">▼</button>
+      </div>
+    </div>
+  </div>
+</main>
+
+<div class="cc-overlay" id="overlay">
+  <div class="cc-overlay-box" id="menu-view">
+    <h1>🏎️ TURBO CIRCUIT</h1>
+    <div class="cc-coinrow" id="cc-coins">🪙 0</div>
+    <div class="cc-trackgrid" id="menu-tracks"></div>
+    <div class="cc-mainbtns">
+      <button id="btn-quick-race">🏁 Quick Race</button>
+      <button id="btn-career">🏆 Career</button>
+      <button id="btn-garage">🔧 Garage</button>
+    </div>
+  </div>
+
+  <div class="cc-overlay-box hidden" id="garage-view">
+    <h1>🔧 GARAGE</h1>
+    <div class="cc-coinrow" id="gg-coins">🪙 0</div>
+    <div class="cc-vgrid" id="garage-vehicles"></div>
+    <div class="cc-tunelist" id="garage-tuning"></div>
+    <div class="cc-mainbtns"><button id="btn-garage-back">← Back</button></div>
+  </div>
+
+  <div class="cc-overlay-box hidden" id="career-view">
+    <h1>🏆 CAREER</h1>
+    <div class="cc-cupgrid" id="career-cups"></div>
+    <div class="cc-mainbtns"><button id="btn-career-back">← Back</button></div>
+  </div>
+</div>
+
+<div class="cc-endpanel hidden" id="endpanel">
+  <div class="cc-endbox">
+    <h2 id="end-title"></h2>
+    <p id="end-msg"></p>
+    <div class="cc-endbtns">
+      <button id="btn-end-retry">↻ Retry</button>
+      <button id="btn-end-menu">☰ Menu</button>
+    </div>
+  </div>
+</div>
+
+<script src="data.js"></script>
+<script src="engine.js"></script>
+<script src="ui.js"></script>
+</body>
+</html>

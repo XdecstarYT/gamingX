@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bastion — Tower Defense — GamingX</title>
+<link rel="stylesheet" href="bastion.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏰</text></svg>">
+<link rel="stylesheet" href="../../assets/css/mobile.css">
+</head>
+<body>
+
+<header class="bs-topbar">
+  <button class="bs-topbtn bs-drawer-toggle" id="btn-drawer-toggle" title="Build panel">🛠️</button>
+  <a class="bs-back" href="../../index.html">← GAMINGX</a>
+  <div class="bs-logo">🏰 <span>BASTION</span></div>
+  <div class="bs-hud">
+    <span id="hud-gold">💰 0</span>
+    <span id="hud-lives">❤️ 0/0</span>
+    <span id="hud-wave">🌊 0</span>
+    <span id="hud-score">⭐ 0</span>
+  </div>
+  <button class="bs-topbtn" id="btn-speed">1x</button>
+  <button class="bs-topbtn" id="btn-pause">⏸</button>
+  <button class="bs-topbtn" id="btn-menu">☰ Menu</button>
+</header>
+
+<div class="bs-scrim" id="bs-scrim"></div>
+<main class="bs-main">
+  <section id="stage-wrap">
+    <canvas id="stage"></canvas>
+  </section>
+  <aside class="bs-side">
+    <button id="btn-start-wave">▶ Start Wave 1</button>
+    <div class="bs-side-label">BUILD</div>
+    <div id="build-panel"></div>
+    <div class="bs-side-label">SELECTED</div>
+    <div id="info-panel"></div>
+  </aside>
+</main>
+
+<div class="bs-overlay" id="overlay">
+  <div class="bs-overlay-box">
+    <h1 id="overlay-title">🏰 BASTION</h1>
+    <div class="sub" id="overlay-sub">Defend the path.</div>
+    <div class="bs-mapgrid" id="menu-maps"></div>
+    <div class="bs-modebtns">
+      <button id="btn-campaign">🏆 Campaign (20 waves)</button>
+      <button id="btn-endless">♾️ Endless</button>
+    </div>
+  </div>
+</div>
+
+<div class="bs-endpanel hidden" id="endpanel">
+  <div class="bs-endbox">
+    <h2 id="end-title"></h2>
+    <p id="end-msg"></p>
+    <div class="bs-endbtns">
+      <button id="btn-end-retry">↻ Retry</button>
+      <button id="btn-end-menu">☰ Menu</button>
+    </div>
+  </div>
+</div>
+
+<script src="data.js"></script>
+<script src="engine.js"></script>
+<script src="ui.js"></script>
+</body>
+</html>

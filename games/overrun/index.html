@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Overrun — Wave Survival Shooter — GamingX</title>
+<link rel="stylesheet" href="overrun.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔫</text></svg>">
+<link rel="stylesheet" href="../../assets/css/mobile.css">
+</head>
+<body>
+
+<header class="or-topbar">
+  <a class="or-back" href="../../index.html">← GAMINGX</a>
+  <div class="or-logo">🔫 <span>OVERRUN</span></div>
+  <div class="or-topright">
+    <span class="or-hudtext" id="or-time">0:00</span>
+  </div>
+</header>
+
+<main class="or-main">
+  <div id="stage-wrap">
+    <canvas id="stage"></canvas>
+    <div class="or-hud">
+      <div class="or-barrow">
+        <span class="or-hudtext">❤️</span>
+        <div class="or-bar"><div class="or-bar-fill" id="or-hp-fill" style="width:100%"></div></div>
+        <span class="or-hudtext" id="or-hp-text">100/100</span>
+      </div>
+      <div class="or-barrow">
+        <span class="or-hudtext" id="or-level">Lv 1</span>
+        <div class="or-bar xp"><div class="or-bar-fill" id="or-xp-fill" style="width:0%"></div></div>
+      </div>
+      <div class="or-stats">
+        <span id="or-kills">☠ 0</span>
+        <span id="or-score">⚙️ 0</span>
+      </div>
+    </div>
+    <div id="or-weapons"></div>
+    <div id="joy-base"><div id="joy-knob"></div></div>
+  </div>
+</main>
+
+<div class="or-overlay" id="overlay">
+  <div class="or-overlay-box" id="menu-view">
+    <h1>🔫 OVERRUN</h1>
+    <div class="or-scraprow" id="or-scrap">⚙️ 0</div>
+    <div class="or-chargrid" id="menu-chars"></div>
+    <div class="or-mainbtns">
+      <button id="btn-start-run">▶ Start Run</button>
+      <button id="btn-shop">🛒 Upgrades Shop</button>
+    </div>
+  </div>
+  <div class="or-overlay-box hidden" id="shop-view">
+    <h1>🛒 UPGRADES</h1>
+    <div class="or-scraprow" id="shop-scrap">⚙️ 0</div>
+    <div class="or-shoplist" id="shop-list"></div>
+    <div class="or-mainbtns"><button id="btn-shop-back">← Back</button></div>
+  </div>
+</div>
+
+<div class="or-levelup hidden" id="levelup">
+  <div class="or-levelup-box">
+    <h2>⭐ LEVEL UP — choose an upgrade</h2>
+    <div class="or-upchoices" id="levelup-choices"></div>
+  </div>
+</div>
+
+<div class="or-endpanel hidden" id="endpanel">
+  <div class="or-endbox">
+    <h2 id="end-title"></h2>
+    <p id="end-msg"></p>
+    <div class="or-endbtns">
+      <button id="btn-end-retry">↻ Retry</button>
+      <button id="btn-end-menu">☰ Menu</button>
+    </div>
+  </div>
+</div>
+
+<script src="data.js"></script>
+<script src="engine.js"></script>
+<script src="ui.js"></script>
+</body>
+</html>
