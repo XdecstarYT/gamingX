@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>AURORA — WebGPU Particle Flight — GamingX</title>
+<link rel="stylesheet" href="aurora.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌌</text></svg>">
+<link rel="stylesheet" href="../../assets/css/mobile.css">
+
+<!-- Modern Three.js WebGPU build + TSL, loaded at runtime. render.js uses these;
+     if they can't load (offline / no module support), the 2D fallback kicks in. -->
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.171.0/build/three.webgpu.min.js",
+    "three/tsl": "https://cdn.jsdelivr.net/npm/three@0.171.0/build/three.tsl.min.js"
+  }
+}
+</script>
+</head>
+<body>
+<script src="../../assets/js/gx-fit.js"></script>
+
+<main class="au-main">
+  <canvas id="stage"></canvas>
+
+  <div class="au-hud">
+    <div class="au-toprow">
+      <div class="au-energy"><div class="au-energy-fill" id="hud-energy-fill"></div></div>
+      <div class="au-score" id="hud-score">0</div>
+      <div class="au-combo" id="hud-combo"></div>
+      <div class="au-time" id="hud-time">0:00</div>
+    </div>
+  </div>
+  <div id="renderer-badge">● initialising…</div>
+
+  <div id="joy-base"><div id="joy-knob"></div></div>
+  <button id="boost-btn">BOOST</button>
+</main>
+
+<div class="au-overlay" id="overlay">
+  <div class="au-box">
+    <div class="au-title">AURORA</div>
+    <div class="au-sub">Pilot a light-craft through a living nebula.<br>Gather glowing <b style="color:var(--teal)">star-cores</b>, dodge the <b style="color:var(--danger)">voids</b>, and outrun the dark.</div>
+    <div class="au-stats">
+      <div class="au-stat"><div class="n" id="menu-best">0</div><div class="l">Best</div></div>
+      <div class="au-stat"><div class="n" id="menu-combo">0</div><div class="l">Best Combo</div></div>
+    </div>
+    <button class="au-btn" id="btn-start">▶ LAUNCH</button>
+    <div class="au-hint">Move: WASD / drag the stick · Boost: Space / hold BOOST<br>Renders with WebGPU + GPU compute where supported, WebGL/2D otherwise.</div>
+  </div>
+</div>
+
+<div class="au-endpanel hidden" id="endpanel">
+  <div class="au-endbox">
+    <h2 id="end-title"></h2>
+    <p id="end-msg"></p>
+    <div class="au-endbtns">
+      <button id="btn-retry">↻ Fly Again</button>
+      <button id="btn-menu">☰ Menu</button>
+    </div>
+  </div>
+</div>
+
+<script src="core.js"></script>
+<script src="fallback.js"></script>
+<script src="ui.js"></script>
+<script type="module" src="render.js"></script>
+</body>
+</html>

@@ -246,6 +246,15 @@ a{color:inherit;text-decoration:none}
   background:repeating-linear-gradient(45deg,rgba(245,179,1,.08) 0 12px,transparent 12px 24px)}
 .gx-card-dev{border-color:rgba(245,179,1,.28)}
 .gx-card-dev:hover{border-color:rgba(245,179,1,.55);box-shadow:0 16px 40px rgba(0,0,0,.5),0 0 0 1px rgba(245,179,1,.28)}
+/* Aurora (WebGPU flagship) */
+.gx-badge-aurora{background:linear-gradient(90deg,#5fd3ff,#66ffe6);color:#04121a;font-weight:900}
+.gx-card-aurora .gx-card-art{height:210px}
+.art-aurora{background:radial-gradient(circle at 50% 35%,#1e3a8a,#0b1030 55%,#05060f 100%);position:relative;overflow:hidden}
+.art-aurora::before{content:"";position:absolute;inset:0;
+  background:radial-gradient(circle at 30% 60%,rgba(95,211,255,.4),transparent 42%),radial-gradient(circle at 72% 40%,rgba(102,255,230,.35),transparent 40%),radial-gradient(circle at 55% 75%,rgba(167,139,250,.3),transparent 44%)}
+.art-aurora .art-emoji{font-size:5rem}
+.gx-card-aurora{border-color:rgba(95,211,255,.45)}
+.gx-card-aurora:hover{border-color:rgba(95,211,255,.85);box-shadow:0 18px 46px rgba(0,0,0,.55),0 0 0 1px rgba(95,211,255,.45),0 0 60px rgba(95,211,255,.2)}
 /* Bastion (tower defense) */
 .gx-badge-bastion{background:rgba(74,222,128,.16);color:#4ade80}
 .art-bastion{background:linear-gradient(135deg,#0d2b1e,#1a3a24 55%,#3a2a05);position:relative;overflow:hidden}

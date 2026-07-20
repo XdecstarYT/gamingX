@@ -1,0 +1,65 @@
+/* ============ AURORA — WebGPU particle flight ============ */
+:root{ --bg:#05060f; --text:#eaf1ff; --muted:#8ea0c8; --cyan:#5fd3ff; --teal:#66ffe6; --danger:#ff5070; }
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%}
+body{background:var(--bg);color:var(--text);overflow:hidden;user-select:none;
+  font-family:'Segoe UI',system-ui,-apple-system,Roboto,Arial,sans-serif}
+button{font-family:inherit;color:inherit;cursor:pointer}
+
+.au-main{position:fixed;inset:0}
+#stage{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none}
+
+/* HUD */
+.au-hud{position:absolute;top:calc(12px + env(safe-area-inset-top));left:14px;right:14px;z-index:5;pointer-events:none;
+  display:flex;flex-direction:column;gap:8px}
+.au-toprow{display:flex;align-items:center;gap:12px}
+.au-energy{flex:1;max-width:280px;height:14px;border-radius:8px;background:rgba(0,0,0,.5);
+  border:1px solid rgba(120,180,255,.3);overflow:hidden}
+.au-energy-fill{height:100%;width:100%;background:linear-gradient(90deg,#22d3ee,#66ffe6);transition:width .1s}
+.au-score{font-size:1.3rem;font-weight:900;text-shadow:0 0 12px rgba(95,211,255,.6)}
+.au-combo{font-size:1rem;font-weight:900;color:var(--teal);text-shadow:0 0 10px rgba(102,255,230,.7);min-width:44px}
+.au-time{margin-left:auto;font-weight:800;color:var(--muted)}
+#renderer-badge{position:absolute;bottom:calc(10px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);
+  z-index:5;font-size:.66rem;font-weight:800;color:var(--muted);background:rgba(5,8,20,.6);
+  padding:4px 10px;border-radius:999px;pointer-events:none;letter-spacing:.4px}
+
+/* joystick + boost */
+#joy-base{position:absolute;left:24px;bottom:calc(30px + env(safe-area-inset-bottom));width:118px;height:118px;
+  border-radius:50%;background:rgba(120,180,255,.06);border:2px solid rgba(120,180,255,.22);z-index:8;touch-action:none}
+#joy-knob{position:absolute;left:50%;top:50%;width:48px;height:48px;margin:-24px 0 0 -24px;border-radius:50%;
+  background:rgba(95,211,255,.35);border:2px solid rgba(95,211,255,.75);pointer-events:none}
+#boost-btn{position:absolute;right:24px;bottom:calc(34px + env(safe-area-inset-bottom));width:78px;height:78px;
+  border-radius:50%;background:rgba(102,255,230,.16);border:2px solid rgba(102,255,230,.5);
+  z-index:8;font-size:.8rem;font-weight:900;color:var(--teal);letter-spacing:.5px}
+
+/* overlays */
+.au-overlay{position:fixed;inset:0;z-index:40;display:flex;align-items:center;justify-content:center;padding:20px;
+  background:radial-gradient(circle at 50% 30%,rgba(30,60,140,.35),rgba(5,6,15,.92) 60%)}
+.au-overlay.hidden{display:none}
+.au-box{text-align:center;max-width:min(460px,92vw)}
+.au-title{font-size:3rem;font-weight:900;letter-spacing:8px;
+  background:linear-gradient(90deg,var(--cyan),var(--teal),#a78bfa);-webkit-background-clip:text;background-clip:text;color:transparent;
+  text-shadow:0 0 40px rgba(95,211,255,.3)}
+.au-sub{color:var(--muted);margin:8px 0 22px;line-height:1.6;font-size:.92rem}
+.au-stats{display:flex;gap:14px;justify-content:center;margin-bottom:22px}
+.au-stat{background:rgba(120,180,255,.08);border:1px solid rgba(120,180,255,.2);border-radius:14px;padding:12px 18px}
+.au-stat .n{font-size:1.5rem;font-weight:900;color:var(--teal)}
+.au-stat .l{font-size:.64rem;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-top:2px}
+.au-btn{padding:15px 40px;border-radius:14px;font-weight:900;font-size:1rem;border:none;letter-spacing:1px;
+  background:linear-gradient(90deg,var(--cyan),var(--teal));color:#04121a;box-shadow:0 10px 40px rgba(95,211,255,.35)}
+.au-btn:hover{transform:translateY(-2px)}
+.au-hint{color:var(--muted);font-size:.72rem;margin-top:16px;line-height:1.6}
+
+.au-endpanel{position:fixed;inset:0;z-index:45;display:flex;align-items:center;justify-content:center;
+  background:rgba(5,6,15,.82);backdrop-filter:blur(5px)}
+.au-endpanel.hidden{display:none}
+.au-endbox{text-align:center;background:rgba(14,20,40,.9);border:1px solid rgba(120,180,255,.2);
+  border-radius:20px;padding:34px 40px;max-width:min(440px,92vw)}
+.au-endbox h2{font-size:1.6rem;font-weight:900;margin-bottom:12px}
+.au-endbox p{color:var(--muted);margin-bottom:22px;line-height:1.7}
+.au-endbtns{display:flex;gap:10px;justify-content:center}
+.au-endbtns button{padding:12px 22px;border-radius:12px;font-weight:800;font-size:.85rem;border:none}
+#btn-retry{background:linear-gradient(90deg,var(--cyan),var(--teal));color:#04121a}
+#btn-menu{background:rgba(120,180,255,.1);color:var(--text);border:1px solid rgba(120,180,255,.25)}
+
+@media (max-width:640px){ .au-title{font-size:2.2rem;letter-spacing:5px} #joy-base{width:104px;height:104px} }
