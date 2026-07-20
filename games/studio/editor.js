@@ -133,9 +133,12 @@ function entityIcon(e) {
 /* ------------------------------------------------------------------ */
 /* viewport / gizmo setup                                              */
 /* ------------------------------------------------------------------ */
+const QUALITY_KEY = 'gamingx.studio.quality';
+function loadQuality() { try { return localStorage.getItem(QUALITY_KEY) || GXS.Runtime.defaultQuality(); } catch (e) { return 'high'; } }
 function initViewport() {
   const canvas = $('viewport');
   runtime = new GXS.Runtime(canvas, project, { onEnd: handleGameEnd, onLog: handleLog });
+  runtime.setQuality(loadQuality());
 
   orbit = new THREE.OrbitControls(runtime.editCamera, canvas);
   orbit.target.set(0, 1, 0);
@@ -652,7 +655,15 @@ function allEntitiesFlat(list) {
 function renderInspectorScene() {
   const s = project.settings;
   const panel = $('inspector-scene');
+  const q = runtime.quality || loadQuality();
   panel.innerHTML = `
+    <div class="st-group"><div class="st-group-head"><b>🖥️ GRAPHICS QUALITY</b></div>
+      <div class="st-field"><label>QUALITY (this device)</label>
+        <select class="st-input" id="s-quality">
+          ${[['high', 'High — full resolution + FX'], ['balanced', 'Balanced'], ['performance', 'Performance — smoothest on phones']].map(([v, l]) => `<option value="${v}" ${q === v ? 'selected' : ''}>${l}</option>`).join('')}
+        </select></div>
+      <div class="st-field" style="color:var(--muted);font-size:.66rem;line-height:1.5">Adjusts render resolution, bloom &amp; shadows to keep the full-screen viewport smooth. Saved per device, not per scene.</div>
+    </div>
     <div class="st-group"><div class="st-group-head"><b>🌌 SKY & FOG</b></div>
       <div class="st-field"><label>SKY TOP</label><input class="st-input" type="color" id="s-sky-top" value="${s.sky.top}"></div>
       <div class="st-field"><label>SKY BOTTOM</label><input class="st-input" type="color" id="s-sky-bottom" value="${s.sky.bottom}"></div>
@@ -690,6 +701,11 @@ function renderInspectorScene() {
   bind('s-bloom-strength', s, 'bloomStrength');
   panel.querySelector('#s-shadows').addEventListener('change', e => { s.shadows = e.target.checked; markDirty(); runtime.applySettings(); });
   panel.querySelector('#s-bloom').addEventListener('change', e => { s.bloom = e.target.checked; markDirty(); runtime.applySettings(); });
+  panel.querySelector('#s-quality').addEventListener('change', e => {
+    const level = e.target.value;
+    try { localStorage.setItem(QUALITY_KEY, level); } catch (err) {}
+    runtime.setQuality(level);   // device preference — not part of the saved scene
+  });
 }
 
 /* ------------------------------------------------------------------ */

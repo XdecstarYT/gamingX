@@ -464,8 +464,8 @@ class Runtime {
     const s = this.data.settings;
     this.scene.background = skyTexture(s.sky.top, s.sky.bottom);
     this.scene.fog = new THREE.FogExp2(s.fogColor, s.fogDensity);
-    this.renderer.shadowMap.enabled = !!s.shadows;
-    this.bloomPass.enabled = !!s.bloom;
+    this.renderer.shadowMap.enabled = !!s.shadows && this.quality !== 'performance';
+    this.bloomPass.enabled = !!s.bloom && this.quality !== 'performance';
     this.bloomPass.strength = s.bloomStrength;
     this.ambientLight = new THREE.HemisphereLight(s.ambient.color, '#11131c', s.ambient.intensity);
     this.scene.add(this.ambientLight);
@@ -1030,6 +1030,33 @@ class Runtime {
       this.renderer.setRenderTarget(null);
       this.renderer.render(this.scene, this.activeCamera);
     }
+  }
+
+  /* Graphics quality: trades fidelity for framerate so the full-screen 3D
+     viewport stays smooth on phones. 'high' | 'balanced' | 'performance'. */
+  setQuality(level) {
+    this.quality = level;
+    const dpr = (typeof devicePixelRatio !== 'undefined' ? devicePixelRatio : 1) || 1;
+    this.renderer.setPixelRatio(level === 'performance' ? 1 : level === 'balanced' ? Math.min(dpr, 1.5) : Math.min(dpr, 2));
+    // bloom/shadows follow the scene's own settings, but 'performance' forces
+    // them off regardless — the biggest framerate wins on a phone.
+    const s = this.data.settings;
+    this.bloomPass.enabled = !!s.bloom && level !== 'performance';
+    this.renderer.shadowMap.enabled = !!s.shadows && level !== 'performance';
+    // toggling shadowMap.enabled after materials compiled needs a recompile
+    this.renderer.shadowMap.needsUpdate = true;
+    if (this.scene) this.scene.traverse(o => {
+      if (!o.material) return;
+      (Array.isArray(o.material) ? o.material : [o.material]).forEach(m => { m.needsUpdate = true; });
+    });
+    if (this.renderer) this._resize();
+  }
+  static defaultQuality() {
+    try {
+      const coarse = typeof matchMedia !== 'undefined' && matchMedia('(pointer:coarse)').matches;
+      if (coarse || (typeof innerWidth !== 'undefined' && innerWidth < 900)) return 'balanced';
+    } catch (e) {}
+    return 'high';
   }
   dispose() {
     cancelAnimationFrame(this._raf);
