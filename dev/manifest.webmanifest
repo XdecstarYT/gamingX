@@ -1,0 +1,15 @@
+{
+  "name": "GamingX Dev Hub",
+  "short_name": "Dev Hub",
+  "description": "Admin console for GamingX — pricing, credits, updates and push notifications.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0b0a17",
+  "theme_color": "#f5b301",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "icon.svg", "sizes": "512x512", "type": "image/svg+xml", "purpose": "maskable" }
+  ]
+}

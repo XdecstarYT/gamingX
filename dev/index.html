@@ -2,9 +2,16 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Dev Hub — GamingX</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛠️</text></svg>">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#f5b301">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Dev Hub">
+<link rel="apple-touch-icon" href="icon.svg">
 <style>
   :root{color-scheme:dark}
   *{box-sizing:border-box}
@@ -45,11 +52,23 @@
   .modetag{display:inline-block;font-size:.66rem;font-weight:800;padding:3px 9px;border-radius:999px;margin-left:8px;
     background:rgba(52,211,153,.15);color:#34d399}
   .modetag.local{background:rgba(245,179,1,.15);color:#f5b301}
+  body{padding-top:calc(14px + env(safe-area-inset-top));padding-bottom:calc(28px + env(safe-area-inset-bottom))}
+  .appbar{position:sticky;top:calc(env(safe-area-inset-top));z-index:20;width:min(640px,96vw);margin:0 auto 4px;
+    display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:16px;
+    background:rgba(18,17,32,.86);backdrop-filter:blur(14px);border:1px solid rgba(255,255,255,.08)}
+  .appbar .logo{font-weight:900;font-size:1.05rem;flex:1}
+  .appbar .logo span{background:linear-gradient(90deg,#f5b301,#ff8a3c);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .appbar a{color:#9aa3bd;text-decoration:none;font-weight:800;font-size:.8rem}
+  #install{display:none;padding:8px 12px;font-size:.78rem}
 </style>
 </head>
 <body>
+<div class="appbar">
+  <div class="logo">🛠️ Dev <span>Hub</span></div>
+  <button id="install" class="ghost">⬇ Install app</button>
+  <a href="../index.html">← GamingX</a>
+</div>
 <div class="wrap">
-  <a class="back" href="../index.html">← GAMINGX</a>
 
   <!-- GATE -->
   <div class="card" id="gate">
@@ -154,9 +173,9 @@
     $('console').classList.remove('hidden');
     $('modetag').textContent = 'online'; $('modetag').className = 'modetag';
     $('console-sub').textContent = 'Server-authoritative. Balances live in Supabase and are enforced by RLS.';
-    await renderStats();
-    renderPricing();
 
+    // Wire every button synchronously FIRST so clicks never land on a dead
+    // control while stats/pricing are still loading over the network.
     $('pk-save').onclick = async () => {
       const r = await C.adminSetPrice($('pk-key').value.trim(), $('pk-label').value.trim() || $('pk-key').value.trim(), parseInt($('pk-credits').value, 10) || 0);
       if (r && r.ok) { setStatus($('console-status'), 'Price saved.', true); renderPricing(); } else setStatus($('console-status'), (r && r.error) || 'Failed.', false);
@@ -184,6 +203,11 @@
       setStatus($('console-status'), msg, true);
     };
     $('signout').onclick = async () => { await GS.signOut(); location.reload(); };
+
+    // now load data (buttons already work)
+    $('stats').innerHTML = '<div class="hint">Loading…</div>';
+    await renderStats();
+    renderPricing();
   }
 
   async function renderStats() {
@@ -215,13 +239,30 @@
       $('modetag').textContent = 'offline (local)'; $('modetag').className = 'modetag local';
       $('console-sub').textContent = 'Offline: local honour-system codes only. Pricing/grants/push need the backend.';
       $('stats').innerHTML = '';
-      ['pricing'].forEach(id => $(id).closest('.card').querySelector('#pricing').innerHTML = '<div class="hint">Backend required.</div>');
+      $('pricing').innerHTML = '<div class="hint">Backend required (sign in online).</div>';
       $('mint-go').onclick = () => { const o = $('mint-out'); o.style.display = 'block'; o.textContent = C.makeCode(parseInt($('mint-amt').value, 10) || 0); };
       ['pk-save', 'grant-go', 'bc-go'].forEach(id => { $(id).disabled = true; $(id).style.opacity = .5; });
       $('signout').classList.add('hidden');
     };
+    $('pass').addEventListener('keydown', e => { if (e.key === 'Enter') $('unlock').click(); });
   }
 
+  /* ---- installable app: register SW + install button ---- */
+  function setupInstall() {
+    if ('serviceWorker' in navigator) { navigator.serviceWorker.register('../sw.js').catch(() => {}); }
+    let deferred = null;
+    window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); deferred = e; $('install').style.display = 'inline-block'; });
+    $('install').onclick = async () => {
+      if (deferred) { deferred.prompt(); await deferred.userChoice.catch(() => {}); deferred = null; $('install').style.display = 'none'; }
+      else { alert('To install: open your browser menu and choose “Add to Home Screen”.'); }
+    };
+    // iOS Safari has no beforeinstallprompt — offer the manual hint if not already installed
+    const iOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+    const standalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+    if (iOS && !standalone) $('install').style.display = 'inline-block';
+  }
+
+  setupInstall();
   boot();
 })();
 </script>

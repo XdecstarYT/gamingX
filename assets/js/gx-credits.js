@@ -189,9 +189,11 @@ async function showBroadcasts() {
   const icon = ({ update: '🚀', news: '📣', alert: '⚠️' })[b.kind] || '📣';
   const el = document.createElement('div'); el.className = 'gxc-cast';
   el.innerHTML = `<div class="ic">${icon}</div><div class="tx"><div class="t">${esc(b.title)}</div>${b.body ? `<div class="b">${esc(b.body)}</div>` : ''}</div><button class="x">✕</button>`;
-  el.querySelector('.x').onclick = () => { markSeen(b.id); el.remove(); };
+  const dismiss = () => { markSeen(b.id); el.classList.remove('show'); setTimeout(() => el.remove(), 300); };
+  el.querySelector('.x').onclick = dismiss;
   document.body.appendChild(el);
   requestAnimationFrame(() => el.classList.add('show'));
+  setTimeout(dismiss, 8000);   // auto-dismiss so it never sits over the toolbar
 }
 function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }
 

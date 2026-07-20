@@ -1050,7 +1050,9 @@ async function setupPro() {
     if (badge) badge.addEventListener('click', () => CREDITS.showWallet({ onChange: refreshCreditBadge }));
   }
   refreshCreditBadge();
-  renderInspectorEntity();       // re-render so labels show live pricing
+  // Only refresh the inspector if nothing is being edited, so a late network
+  // resolve never rebuilds the panel out from under a click.
+  if (!selectedId) renderInspectorEntity();
   try { CREDITS.showBroadcasts(); } catch (e) {}
 }
 boot();
