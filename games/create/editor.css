@@ -146,6 +146,7 @@ input{font-family:inherit}
 .fg-textarea{
   width:100%;height:150px;background:#0d1120;border:1px solid rgba(255,255,255,.12);
   border-radius:10px;color:var(--text);font-family:monospace;font-size:.72rem;padding:10px;resize:vertical;
+  -webkit-user-select:text;user-select:text; /* body has user-select:none for the editor chrome — this share code must stay selectable */
 }
 
 /* playtest overlay */

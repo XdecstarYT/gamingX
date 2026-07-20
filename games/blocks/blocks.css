@@ -93,3 +93,24 @@ input,select{font-family:inherit;color:inherit}
 .bl-toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(20px);background:rgba(20,26,46,.97);border:1px solid var(--border);color:#fff;padding:9px 18px;border-radius:999px;font-size:.8rem;font-weight:700;z-index:60;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s}
 .bl-toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 @media(max-width:900px){.bl-left{width:150px}.bl-right{width:300px}}
+
+/* mobile: sprites/scripts panels become slide-in drawers instead of spilling
+   off-canvas next to the stage (see games/studio/studio.css for the same
+   pattern + rationale). */
+.bl-drawer-toggle{display:none}
+.bl-scrim{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:34;opacity:0;pointer-events:none;transition:opacity .2s}
+.bl-scrim.show{opacity:1;pointer-events:auto}
+@media (max-width:760px){
+  .bl-drawer-toggle{display:inline-flex;align-items:center;justify-content:center;width:38px;padding:0;font-size:1rem}
+  .bl-title{max-width:120px;min-width:70px;flex:1}
+  .bl-left{
+    position:fixed;top:0;left:0;bottom:0;z-index:35;width:80vw;max-width:280px;
+    transform:translateX(-100%);transition:transform .25s ease;box-shadow:24px 0 50px rgba(0,0,0,.45);
+  }
+  .bl-left.open{transform:translateX(0)}
+  .bl-right{
+    position:fixed;top:0;right:0;bottom:0;z-index:35;width:88vw;max-width:360px;
+    transform:translateX(100%);transition:transform .25s ease;box-shadow:-24px 0 50px rgba(0,0,0,.45);
+  }
+  .bl-right.open{transform:translateX(0)}
+}

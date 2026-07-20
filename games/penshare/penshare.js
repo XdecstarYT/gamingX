@@ -103,10 +103,11 @@ async function toggleLike(el, p) {
   try { if (will) await c.from('ps_likes').insert({ post_id: p.id, user_id: me.id }); else await c.from('ps_likes').delete().eq('post_id', p.id).eq('user_id', me.id); }
   catch (e) { el._liked = !will; el._likeCount += will ? -1 : 1; btn.classList.toggle('on', !will); btn.innerHTML = `${!will ? '❤️' : '🤍'} <span>${fmt(el._likeCount)}</span>`; }
 }
-function sharePost(p, a) {
+async function sharePost(p, a) {
   const text = `@${a.username} on PenShare: "${p.text}"`;
   if (navigator.share) { navigator.share({ text }).catch(() => {}); return; }
-  if (navigator.clipboard) navigator.clipboard.writeText(text).then(() => toast('Copied to clipboard')).catch(() => toast('Could not copy'));
+  const r = window.GXCopy ? await window.GXCopy.copy(text) : { ok: false };
+  toast(r.ok ? 'Copied to clipboard' : 'Could not copy');
 }
 
 /* ------------------------------------------------------------------ */

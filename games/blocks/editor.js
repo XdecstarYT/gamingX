@@ -12,6 +12,25 @@ const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&am
 let project = null, engine = null, selId = null, playing = false, hudTimer = 0;
 
 /* ------------------------------------------------------------------ */
+/* mobile drawers — see games/studio/studio.css for the same pattern +   */
+/* rationale (side panels don't fit next to the stage on a phone).       */
+/* ------------------------------------------------------------------ */
+const MOBILE_BP = 760;
+function isMobileLayout() { return window.innerWidth <= MOBILE_BP; }
+function setDrawer(which, open) {
+  const el = document.querySelector(which === 'left' ? '.bl-left' : '.bl-right');
+  if (el) el.classList.toggle('open', open);
+  const scrim = $('bl-scrim');
+  if (scrim) scrim.classList.toggle('show', !!document.querySelector('.bl-left.open,.bl-right.open'));
+}
+(() => {
+  const hBtn = $('btn-drawer-left'), rBtn = $('btn-drawer-right'), scrim = $('bl-scrim');
+  if (hBtn) hBtn.addEventListener('click', () => setDrawer('left', !document.querySelector('.bl-left').classList.contains('open')));
+  if (rBtn) rBtn.addEventListener('click', () => setDrawer('right', !document.querySelector('.bl-right').classList.contains('open')));
+  if (scrim) scrim.addEventListener('click', () => { setDrawer('left', false); setDrawer('right', false); });
+})();
+
+/* ------------------------------------------------------------------ */
 /* templates                                                          */
 /* ------------------------------------------------------------------ */
 function starterProject() {
@@ -67,7 +86,13 @@ function renderSprites() {
   project.sprites.forEach(sp => {
     const el = document.createElement('div'); el.className = 'bl-sprite' + (sp.id === selId ? ' on' : '');
     el.innerHTML = `<span class="dot ${sp.shape}" style="background:${sp.color}"></span><span class="nm">${esc(sp.name)}</span><button class="del" title="Delete">✕</button>`;
-    el.addEventListener('click', e => { if (e.target.classList.contains('del')) return; selId = sp.id; renderAll(); });
+    el.addEventListener('click', e => {
+      if (e.target.classList.contains('del')) return;
+      selId = sp.id; renderAll();
+      // on a phone, picking a sprite in the (drawer) sprite list should jump
+      // straight to its scripts instead of leaving you to hunt for a button
+      if (isMobileLayout()) { setDrawer('left', false); setDrawer('right', true); }
+    });
     el.querySelector('.del').addEventListener('click', e => { e.stopPropagation(); if (project.sprites.length <= 1) return toast('Keep at least one sprite'); project.sprites = project.sprites.filter(x => x.id !== sp.id); if (selId === sp.id) selId = project.sprites[0].id; engine.reset(); renderAll(); markDirty(); });
     root.appendChild(el);
   });

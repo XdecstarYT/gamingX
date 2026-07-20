@@ -217,11 +217,11 @@ async function toggleLike(card, v) {
   } catch (e) { /* revert on failure */ card._liked = !willLike; card._likeCount += willLike ? -1 : 1; btn.classList.toggle('liked', !willLike); btn.querySelector('.pf-action-count').textContent = fmtCount(card._likeCount); }
 }
 
-function sharePost(v, author) {
+async function sharePost(v, author) {
   const text = `Check out @${author.username}'s Penfrank clip: "${v.caption}"`;
   if (navigator.share) { navigator.share({ text }).catch(() => {}); return; }
-  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(() => showToast('Copied to clipboard')).catch(() => showToast('Could not copy'));
-  else showToast('Sharing not supported here');
+  const r = window.GXCopy ? await window.GXCopy.copy(text) : { ok: false };
+  showToast(r.ok ? 'Copied to clipboard' : 'Could not copy');
 }
 
 /* comments */

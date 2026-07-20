@@ -223,7 +223,28 @@ function selectEntity(id) {
   else gizmo.detach();
   renderHierarchy();
   renderInspectorEntity();
+  // on a phone, picking something in the (drawer) hierarchy should jump
+  // straight to its properties instead of leaving you to hunt for a button
+  if (id && isMobileLayout()) { setDrawer('hierarchy', false); setDrawer('inspector', true); }
 }
+
+/* ------------------------------------------------------------------ */
+/* mobile drawers — the hierarchy/inspector side panels don't fit next to  */
+/* the viewport on a phone; below MOBILE_BP they become slide-in drawers  */
+/* instead of spilling off-canvas (which is what forces pinch-zooming).    */
+/* ------------------------------------------------------------------ */
+const MOBILE_BP = 760;
+function isMobileLayout() { return window.innerWidth <= MOBILE_BP; }
+function setDrawer(which, open) {
+  const el = document.querySelector(which === 'hierarchy' ? '.st-hierarchy' : '.st-inspector');
+  if (el) el.classList.toggle('open', open);
+  const scrim = $('st-scrim');
+  if (scrim) scrim.classList.toggle('show', !!document.querySelector('.st-hierarchy.open,.st-inspector.open'));
+}
+const drawerHBtn = $('btn-drawer-hierarchy'), drawerIBtn = $('btn-drawer-inspector'), scrimEl = $('st-scrim');
+if (drawerHBtn) drawerHBtn.addEventListener('click', () => setDrawer('hierarchy', !document.querySelector('.st-hierarchy').classList.contains('open')));
+if (drawerIBtn) drawerIBtn.addEventListener('click', () => setDrawer('inspector', !document.querySelector('.st-inspector').classList.contains('open')));
+if (scrimEl) scrimEl.addEventListener('click', () => { setDrawer('hierarchy', false); setDrawer('inspector', false); });
 
 /* ------------------------------------------------------------------ */
 /* hierarchy panel                                                     */
@@ -892,15 +913,14 @@ $('btn-share').addEventListener('click', () => {
   showModal(`<h2>⇄ SHARE SCENE</h2><p>Copy this code to share your 3D scene, or paste one in and import it.</p>
     <textarea class="st-textarea" id="share-ta">${escapeHtml(json)}</textarea>
     <div class="st-modal-buttons">
-      <button class="st-btn st-btn-primary" data-act="copy">COPY CODE</button>
+      <button class="st-btn st-btn-primary" data-act="copy" data-keep-open>COPY CODE</button>
       <button class="st-btn st-btn-accent" data-act="import">IMPORT</button>
       <button class="st-btn" data-x>CLOSE</button>
-    </div>`, act => {
+    </div>`, async act => {
     const ta = document.getElementById('share-ta');
     if (act === 'copy') {
-      ta.select();
-      navigator.clipboard && navigator.clipboard.writeText(ta.value).catch(() => {});
-      setStatus('Copied to clipboard');
+      const r = window.GXCopy ? await window.GXCopy.copyFromField(ta) : { ok: false };
+      setStatus(r.ok ? 'Copied to clipboard' : 'Couldn’t auto-copy — the code is selected, copy it with your keyboard/menu', !r.ok);
     } else if (act === 'import') {
       try {
         const data = JSON.parse(ta.value);
@@ -1001,7 +1021,10 @@ function showModal(html, onAct) {
   box.innerHTML = html;
   m.classList.remove('hidden');
   box.querySelectorAll('[data-x]').forEach(b => b.addEventListener('click', () => m.classList.add('hidden')));
-  box.querySelectorAll('[data-act]').forEach(b => b.addEventListener('click', () => { m.classList.add('hidden'); onAct && onAct(b.dataset.act, b); }));
+  box.querySelectorAll('[data-act]').forEach(b => b.addEventListener('click', () => {
+    if (!b.hasAttribute('data-keep-open')) m.classList.add('hidden'); // e.g. COPY CODE stays open so a failed
+    onAct && onAct(b.dataset.act, b);                                // auto-copy can fall back to a visible selection
+  }));
   return box;
 }
 function closeModal() { $('modal').classList.add('hidden'); }

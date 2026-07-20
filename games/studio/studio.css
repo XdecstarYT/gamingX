@@ -225,6 +225,7 @@ input,select,textarea{font-family:inherit;color:inherit}
 .st-textarea{
   width:100%;height:140px;background:#0d1120;border:1px solid rgba(255,255,255,.12);
   border-radius:10px;color:var(--text);font-family:monospace;font-size:.7rem;padding:10px;resize:vertical;
+  -webkit-user-select:text;user-select:text; /* body has user-select:none for the editor chrome — this share code must stay selectable */
 }
 .st-status{position:fixed;bottom:158px;right:16px;font-size:.72rem;font-weight:800;color:var(--green);z-index:5}
 .st-status.err{color:#f87171}
@@ -232,4 +233,27 @@ input,select,textarea{font-family:inherit;color:inherit}
 @media (max-width:1000px){
   .st-hierarchy{width:180px}
   .st-inspector{width:250px}
+}
+
+/* mobile: the desktop 3-pane layout (hierarchy | viewport | inspector) can't
+   fit a phone screen side-by-side without shrinking everything unreadably or
+   spilling off-canvas — either way you'd have to pinch-zoom to reach it. Below
+   this width the side panels become slide-in drawers over the viewport instead. */
+.st-drawer-toggle{display:none}
+.st-scrim{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:34;opacity:0;pointer-events:none;transition:opacity .2s}
+.st-scrim.show{opacity:1;pointer-events:auto}
+@media (max-width:760px){
+  .st-drawer-toggle{display:inline-flex;align-items:center;justify-content:center;width:38px;padding:0;font-size:1rem}
+  .st-title{max-width:120px;min-width:70px;flex:1}
+  .st-tools,.st-insert{display:none}
+  .st-hierarchy{
+    position:fixed;top:0;left:0;bottom:0;z-index:35;width:82vw;max-width:300px;
+    transform:translateX(-100%);transition:transform .25s ease;box-shadow:24px 0 50px rgba(0,0,0,.45);
+  }
+  .st-hierarchy.open{transform:translateX(0)}
+  .st-inspector{
+    position:fixed;top:0;right:0;bottom:0;z-index:35;width:86vw;max-width:340px;
+    transform:translateX(100%);transition:transform .25s ease;box-shadow:-24px 0 50px rgba(0,0,0,.45);
+  }
+  .st-inspector.open{transform:translateX(0)}
 }

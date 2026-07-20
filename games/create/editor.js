@@ -357,8 +357,8 @@ function modal(html, onAct) {
   m.classList.remove('hidden');
   box.querySelectorAll('[data-x]').forEach(b => b.addEventListener('click', () => m.classList.add('hidden')));
   box.querySelectorAll('[data-act]').forEach(b => b.addEventListener('click', () => {
-    m.classList.add('hidden');
-    onAct && onAct(b.dataset.act, b);
+    if (!b.hasAttribute('data-keep-open')) m.classList.add('hidden'); // COPY CODE stays open so a failed auto-copy
+    onAct && onAct(b.dataset.act, b);                                // can fall back to a visible selection
   }));
   return box;
 }
@@ -439,16 +439,14 @@ $('btn-share').addEventListener('click', () => {
     <p>Copy this code to share your game, or paste a friend's code below and hit Import.</p>
     <textarea class="fg-textarea" id="share-ta">${esc(json)}</textarea>
     <div class="fg-modal-buttons">
-      <button class="fg-btn fg-btn-primary" data-act="copy">COPY CODE</button>
+      <button class="fg-btn fg-btn-primary" data-act="copy" data-keep-open>COPY CODE</button>
       <button class="fg-btn fg-btn-accent" data-act="import">IMPORT FROM CODE</button>
       <button class="fg-btn" data-x>CLOSE</button>
-    </div>`, act => {
+    </div>`, async act => {
     const ta = document.getElementById('share-ta');
     if (act === 'copy') {
-      ta.select();
-      try { document.execCommand('copy'); } catch (e) {}
-      navigator.clipboard && navigator.clipboard.writeText(ta.value).catch(() => {});
-      status('Copied to clipboard');
+      const r = window.GXCopy ? await window.GXCopy.copyFromField(ta) : { ok: false };
+      status(r.ok ? 'Copied to clipboard' : 'Couldn’t auto-copy — the code is selected, copy it with your keyboard/menu', !r.ok);
     } else if (act === 'import') {
       try {
         const p = JSON.parse(ta.value);

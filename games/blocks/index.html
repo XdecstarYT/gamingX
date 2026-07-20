@@ -6,12 +6,15 @@
 <title>GX Blocks — Visual Game Maker — GamingX</title>
 <link rel="stylesheet" href="blocks.css">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧩</text></svg>">
+<link rel="stylesheet" href="../../assets/css/mobile.css">
 </head>
 <body>
 <header class="bl-topbar">
+  <button class="bl-btn bl-drawer-toggle" id="btn-drawer-left" title="Sprites">☰</button>
   <a class="bl-back" href="../../index.html">← GAMINGX</a>
   <div class="bl-logo">GX <span>BLOCKS</span></div>
   <input id="title-input" class="bl-title" maxlength="30" placeholder="Untitled Game" spellcheck="false">
+  <button class="bl-btn bl-drawer-toggle" id="btn-drawer-right" title="Scripts">📜</button>
   <div class="bl-actions">
     <button class="bl-btn" id="btn-new">✚ New</button>
     <button class="bl-btn" id="btn-projects">📁 Games</button>
@@ -20,6 +23,7 @@
   </div>
 </header>
 
+<div class="bl-scrim" id="bl-scrim"></div>
 <main class="bl-main">
   <aside class="bl-left">
     <div class="bl-panel-label">SPRITES</div>

@@ -1,0 +1,45 @@
+/* ============================================================================
+   GamingX — shared mobile-friendliness baseline.
+
+   Linked at the end of <head> on every page, AFTER the page's own stylesheet,
+   so its media-scoped !important rules always win. Two concrete bugs this
+   fixes:
+
+   1. "Have to zoom in" — iOS Safari (and some Android browsers) auto-zoom the
+      whole page when you focus a text input/select/textarea whose computed
+      font-size is under 16px, then never zoom back out for you. Almost every
+      form control on this site was styled at .8-.95rem (13-15px), so tapping
+      any field yanked the viewport in. Forcing 16px on those elements kills
+      the trigger without changing the visual size of anything else.
+   2. Sluggish/"dead" taps and accidental double-tap-zoom on buttons — mobile
+      browsers wait ~300ms after a tap to see if it's the first half of a
+      double-tap-to-zoom gesture. touch-action:manipulation tells the browser
+      "this element only single-taps", removing that delay and the zoom.
+   ========================================================================== */
+
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+
+/* stop iOS auto-zoom-on-focus: keep effective font-size >= 16px on any
+   real text-entry control, on phone-sized viewports. */
+@media (max-width: 900px) {
+  input, select, textarea {
+    font-size: 16px !important;
+  }
+}
+
+/* remove tap delay / double-tap-zoom ambiguity on interactive elements */
+a, button, [role="button"], input, select, textarea, label, .gx-card {
+  touch-action: manipulation;
+}
+
+/* a stray fixed-width child is the #1 cause of "have to pinch-zoom out to see
+   the page" — this is a safety net on top of fixing the actual offenders. */
+html, body { max-width: 100%; overflow-x: hidden; }
+img, svg, canvas, video { max-width: 100%; }
+
+/* comfortable minimum tap target on small screens without resizing desktop UI */
+@media (max-width: 640px) {
+  button, .gx-btn, a.gx-card, input[type="checkbox"], input[type="radio"] {
+    min-height: 40px;
+  }
+}

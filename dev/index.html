@@ -60,7 +60,24 @@
   .appbar .logo span{background:linear-gradient(90deg,#f5b301,#ff8a3c);-webkit-background-clip:text;background-clip:text;color:transparent}
   .appbar a{color:#9aa3bd;text-decoration:none;font-weight:800;font-size:.8rem}
   #install{display:none;padding:8px 12px;font-size:.78rem}
+  .copy-row{display:flex;gap:8px;align-items:center}
+  .copy-row .out{flex:1;margin-top:0}
+  .copy-row button{flex:none}
+  @media (max-width:480px){
+    body{padding-left:10px;padding-right:10px}
+    .card{padding:18px}
+    .row{flex-wrap:wrap}
+    .row>div{flex:1 1 100%}
+    .row button{width:100%}
+    .stats{grid-template-columns:repeat(2,1fr)}
+    .price-row{flex-wrap:wrap}
+    .price-row .k{flex:1 1 100%}
+    .price-row input{flex:1;width:auto}
+    .copy-row{flex-wrap:wrap}
+    .copy-row button{width:100%}
+  }
 </style>
+<link rel="stylesheet" href="../assets/css/mobile.css">
 </head>
 <body>
 <div class="appbar">
@@ -105,7 +122,10 @@
       <div><input id="mint-note" placeholder="note (optional)"></div>
       <button id="mint-go">Generate</button>
     </div>
-    <div class="out" id="mint-out"></div>
+    <div class="copy-row">
+      <div class="out" id="mint-out"></div>
+      <button class="ghost hidden" id="mint-copy">📋 Copy</button>
+    </div>
 
     <hr>
     <h3>➕ Grant credits to a user</h3>
@@ -133,6 +153,7 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="../assets/js/gx-copy.js"></script>
 <script src="../assets/js/gx-social.js"></script>
 <script src="../assets/js/gx-credits.js"></script>
 <script>
@@ -140,6 +161,23 @@
   const $ = id => document.getElementById(id);
   const C = window.GXCredits, GS = window.GXSocial;
   const setStatus = (el, msg, ok) => { el.className = 'status ' + (ok ? 'ok' : 'err'); el.textContent = msg; };
+
+  /* Shows a minted code with a working Copy button — real success/failure,
+     not a blind "Copied!" (that was the actual copy bug: the old flow only
+     ever showed the code as plain text, so the only way to grab it was to
+     manually select the tiny monospace text by hand, which is what forced
+     pinch-zooming in on a phone). */
+  function showMintedCode(code) {
+    const o = $('mint-out'), btn = $('mint-copy');
+    o.style.display = 'block'; o.textContent = code;
+    btn.classList.remove('hidden');
+    btn.textContent = '📋 Copy';
+    btn.onclick = async () => {
+      const r = window.GXCopy ? await window.GXCopy.copy(code) : { ok: false };
+      if (r.ok) { btn.textContent = '✅ Copied'; setTimeout(() => { btn.textContent = '📋 Copy'; }, 1500); }
+      else { btn.textContent = '⚠️ Select & copy below'; o.style.userSelect = 'all'; try { const range = document.createRange(); range.selectNodeContents(o); getSelection().removeAllRanges(); getSelection().addRange(range); } catch (e) {} }
+    };
+  }
 
   async function boot() {
     if (!GS || !GS.available()) return bootLocal();
@@ -182,7 +220,7 @@
     };
     $('mint-go').onclick = async () => {
       const r = await C.adminMintCode(parseInt($('mint-amt').value, 10) || 0, $('mint-note').value.trim());
-      if (r && r.ok) { const o = $('mint-out'); o.style.display = 'block'; o.textContent = r.code; setStatus($('console-status'), 'Code minted — email it to the user.', true); }
+      if (r && r.ok) { showMintedCode(r.code); setStatus($('console-status'), 'Code minted — email it to the user.', true); }
       else setStatus($('console-status'), (r && r.error) || 'Failed.', false);
     };
     $('grant-go').onclick = async () => {
@@ -240,7 +278,7 @@
       $('console-sub').textContent = 'Offline: local honour-system codes only. Pricing/grants/push need the backend.';
       $('stats').innerHTML = '';
       $('pricing').innerHTML = '<div class="hint">Backend required (sign in online).</div>';
-      $('mint-go').onclick = () => { const o = $('mint-out'); o.style.display = 'block'; o.textContent = C.makeCode(parseInt($('mint-amt').value, 10) || 0); };
+      $('mint-go').onclick = () => { showMintedCode(C.makeCode(parseInt($('mint-amt').value, 10) || 0)); };
       ['pk-save', 'grant-go', 'bc-go'].forEach(id => { $(id).disabled = true; $(id).style.opacity = .5; });
       $('signout').classList.add('hidden');
     };

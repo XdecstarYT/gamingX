@@ -6,13 +6,16 @@
 <title>GX Studio — 3D Game Creator — GamingX</title>
 <link rel="stylesheet" href="studio.css">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧊</text></svg>">
+<link rel="stylesheet" href="../../assets/css/mobile.css">
 </head>
 <body>
 
 <header class="st-topbar">
+  <button class="st-btn st-drawer-toggle" id="btn-drawer-hierarchy" title="Explorer">☰</button>
   <a class="st-back" href="../../index.html">← GAMINGX</a>
   <div class="st-logo">GX <span>STUDIO</span></div>
   <input id="title-input" class="st-title" maxlength="28" placeholder="Untitled Scene" spellcheck="false">
+  <button class="st-btn st-drawer-toggle" id="btn-drawer-inspector" title="Properties">🔧</button>
 
   <div class="st-tools" id="toolbar">
     <button class="st-tool" data-tool="select" title="Select (Q)">⟲</button>
@@ -39,6 +42,7 @@
   </div>
 </header>
 
+<div class="st-scrim" id="st-scrim"></div>
 <main class="st-main">
   <aside class="st-hierarchy">
     <div class="st-side-label">EXPLORER</div>
@@ -94,6 +98,7 @@
 <script src="../../assets/js/vendor/UnrealBloomPass.js"></script>
 <script src="../../assets/js/vendor/cannon-es.global.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="../../assets/js/gx-copy.js"></script>
 <script src="../../assets/js/gx-social.js"></script>
 <script src="../../assets/js/gx-credits.js"></script>
 <script src="gamx.js"></script>
